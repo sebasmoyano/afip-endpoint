@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package java.app.mgdtrat.generacionPDFs;
+package app.mgdtrat.generacionPDFs;
 
 import io.slingr.endpoints.afip.mgdtrat.generacionPDFs.Comprador;
 import io.slingr.endpoints.afip.mgdtrat.generacionPDFs.ComprobanteFiscalImpresion;

@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package java.app.mgdtrat.wsafip;
+package app.mgdtrat.wsafip;
 
 import io.slingr.endpoints.afip.mgdtrat.util.GestorDeConfiguracion;
 import io.slingr.endpoints.afip.mgdtrat.wsafip.AutenticadorAFIP;
