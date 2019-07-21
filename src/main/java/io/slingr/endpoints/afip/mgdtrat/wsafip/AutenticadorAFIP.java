@@ -81,9 +81,9 @@ public class AutenticadorAFIP {
     private void autenticacionYAutorizacion() {
         String loginTicketResponse = null;
 
-        String endpoint = this.gestorConfig.getProperty("endpointAutenticacionAutorizacion");
+        String endpoint = this.gestorConfig.getProperty("endpointAutenticacion");
         String service = this.gestorConfig.getProperty("service");
-        String dstDN = this.gestorConfig.getProperty("dstdn");
+        String dstDN = this.gestorConfig.getProperty("destinoServicio");
 
         String p12file = this.gestorConfig.getAbsolutePathConfigurationDir() + this.gestorConfig.getProperty("keystore");
         String signer = this.gestorConfig.getProperty("keystore-signer");

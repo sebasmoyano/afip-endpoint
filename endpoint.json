@@ -17,44 +17,20 @@
     },
     "status": "ACTIVE",
     "stores": [],
-    "events": [
-        {
-            "label": "Inbound Event",
-            "name": "inboundEvent",
-            "description": "Event send for the endpoint each time that a POST request to the root path of the web service."
-        },
-        {
-            "label": "Pong",
-            "name": "pong",
-            "description": "Callback event for the Ping function"
-        }
-    ],
     "functions": [
         {
-            "label": "Random number generator",
-            "name": "randomNumber",
-            "description": "Generates a random integer"
+            "label": "Autorizar comprobante",
+            "name": "autorizarComprobante",
+            "description": "Solicita un nuevo codigo autorizacion a AFIP"
         },
         {
-            "label": "Ping",
-            "name": "ping",
-            "description": "The service returns the sent value for the Pong event",
-            "callbacks": [
-                {
-                    "name": "pong",
-                    "maxWaitingTime": 60000,
-                    "maxExpectedResponses": 1
-                }
-            ]
-        },
-        {
-            "label": "Error",
-            "name": "error",
-            "description": "Always throws an exception after to try to execute a method that throws a generic exception."
+            "label": "Imprimir comprobante",
+            "name": "imprimirComprobante",
+            "description": "Exporta a PDF un comprobante determinado"
         }
     ],
     "scripts":[
-        "utils.js"
+        "api.js"
     ],
     "configuration":[
         {

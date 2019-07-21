@@ -24,7 +24,6 @@ import java.text.SimpleDateFormat;
 
 
 /**
- *
  * @author itraverso
  */
 public class GestorAFIP {
@@ -55,7 +54,7 @@ public class GestorAFIP {
 
     private Object ejecutarOperacionWebService(String req, Class responseClass) {
         try {
-            URL wsdlLocation = new URL(this.gestorConfig.getProperty("wsdlLocationFacturacion"));
+            URL wsdlLocation = new URL(this.gestorConfig.getProperty("endpointFacturacion"));
             fev1.dif.afip.gov.ar.Service service = new fev1.dif.afip.gov.ar.Service(wsdlLocation);
 
             QName portQName = new QName("http://ar.gov.afip.dif.FEV1/", "ServiceSoap12");
@@ -81,10 +80,10 @@ public class GestorAFIP {
         String cuit = this.gestorConfig.getProperty("CUIT");
 
         String req = "<" + nombreOperacion + "  xmlns=\"http://ar.gov.afip.dif.FEV1/\"><Auth>" +
-                        "<Token>" + taAFIP.getToken() + "</Token>" +
-                        "<Sign>" + taAFIP.getSign() + "</Sign>" +
-                        "<Cuit>" + cuit + "</Cuit>" +
-                      "</Auth></" + nombreOperacion + ">";
+                "<Token>" + taAFIP.getToken() + "</Token>" +
+                "<Sign>" + taAFIP.getSign() + "</Sign>" +
+                "<Cuit>" + cuit + "</Cuit>" +
+                "</Auth></" + nombreOperacion + ">";
 
         return req;
     }
@@ -110,7 +109,7 @@ public class GestorAFIP {
         }
     }
 
-     /**
+    /**
      * Permite consultar la tabla repositoria de Tipos de IVA
      * de AFIP.
      */
@@ -131,7 +130,7 @@ public class GestorAFIP {
         }
     }
 
-     /**
+    /**
      * Permite consultar la tabla repositoria de Tipos de Comprobantes
      * de AFIP.
      */
@@ -152,7 +151,7 @@ public class GestorAFIP {
         }
     }
 
-     /**
+    /**
      * Permite consultar la tabla repositoria de Tipos de Conceptos
      * de AFIP.
      */
@@ -173,7 +172,7 @@ public class GestorAFIP {
         }
     }
 
-     /**
+    /**
      * Permite consultar la tabla repositoria de Tipos de Monedas
      * de AFIP.
      */
@@ -194,7 +193,7 @@ public class GestorAFIP {
         }
     }
 
-     /**
+    /**
      * Permite consultar la tabla repositoria de Tipos Opcional
      * de AFIP.
      */
@@ -205,7 +204,7 @@ public class GestorAFIP {
 
         ArrayOfErr errores = tiposOpcional.getFEParamGetTiposOpcionalResult().getErrors();
 
-        if(errores != null) {
+        if (errores != null) {
             throw new RuntimeException(this.getCadenaErrores(errores));
         } else {
             ArrayOfOpcionalTipo arreglo = tiposOpcional.getFEParamGetTiposOpcionalResult().getResultGet();
@@ -218,7 +217,7 @@ public class GestorAFIP {
         }
     }
 
-     /**
+    /**
      * Permite consultar la tabla repositoria de Puntos de Ventas
      * de AFIP.
      */
@@ -229,7 +228,7 @@ public class GestorAFIP {
 
         ArrayOfErr errores = ptosVenta.getFEParamGetPtosVentaResult().getErrors();
 
-        if(errores != null) {
+        if (errores != null) {
             throw new RuntimeException(this.getCadenaErrores(errores));
 
         } else {
@@ -249,32 +248,32 @@ public class GestorAFIP {
     /**
      * Método para solictar el CAE de AFIP.
      *
-     * @param compDetRequest
-     * @param comprobanteTipo
-     * @return //Si hay observaciones las retornamos.
+     * @param tipoComprobante
+     * @param pedidoAutorizacion
+     * @return // Si hay observaciones las retornamos.
      */
-    public CAEResult solicitarCAE(FECAEDetRequest compDetRequest, int comprobanteTipo) {
+    public CAEResult solicitarCAE(int tipoComprobante, FECAEDetRequest pedidoAutorizacion) {
         CAEResult caeResult = new CAEResult();
         FECAERequest compRequest = new FECAERequest();
         FECAECabRequest compCabRequest = new FECAECabRequest();
         ArrayOfFECAEDetRequest compDetRequestArray = new ArrayOfFECAEDetRequest();
 
         //Seteamos el número de comprobante - CbteDesde igual a CbteHasta => pedido individual
-        if(compDetRequest.getCbteDesde() <= 0l) {
-            long ultimoNumeroComprobante = this.getNumeroUltimoComprobanteAutorizado(Integer.parseInt(this.gestorConfig.getProperty("puntoDeVenta")), comprobanteTipo);
+        if (pedidoAutorizacion.getCbteDesde() <= 0l) {
+            long ultimoNumeroComprobante = this.getNumeroUltimoComprobanteAutorizado(Integer.parseInt(this.gestorConfig.getProperty("puntoDeVenta")), tipoComprobante);
             long proximoNumeroComprobante = ultimoNumeroComprobante + 1;
 
-            compDetRequest.setCbteDesde(proximoNumeroComprobante);
-            compDetRequest.setCbteHasta(proximoNumeroComprobante);
+            pedidoAutorizacion.setCbteDesde(proximoNumeroComprobante);
+            pedidoAutorizacion.setCbteHasta(proximoNumeroComprobante);
         }
 
         //Datos de la cabera de la solicitud
-        compCabRequest.setCbteTipo(comprobanteTipo);
+        compCabRequest.setCbteTipo(tipoComprobante);
         compCabRequest.setPtoVta(this.getPuntoDeVenta());
         compCabRequest.setCantReg(1);
 
         //Datos del Detalle de la solicitud (Datos de la cabecera del comprobante)
-        compDetRequestArray.getFECAEDetRequest().add(compDetRequest);
+        compDetRequestArray.getFECAEDetRequest().add(pedidoAutorizacion);
 
         compRequest.setFeCabReq(compCabRequest);
         compRequest.setFeDetReq(compDetRequestArray);
@@ -299,11 +298,11 @@ public class GestorAFIP {
         //Errores
         ArrayOfErr errores = respuestaCAE.getFECAESolicitarResult().getErrors();
 
-        if(errores != null) {
+        if (errores != null) {
             String cadenaErrores = this.getCadenaErrores(errores);
 
-            if(cadenaErrores.contains("10016")) {
-                long ultimoCompAuth = this.getNumeroUltimoComprobanteAutorizado(this.getPuntoDeVenta(), comprobanteTipo);
+            if (cadenaErrores.contains("10016")) {
+                long ultimoCompAuth = this.getNumeroUltimoComprobanteAutorizado(this.getPuntoDeVenta(), tipoComprobante);
 
                 cadenaErrores += " El ultimo número de comprobante autorizado (con CAE) para este tipo de comprobante fue el " + ultimoCompAuth + ".";
             }
@@ -320,19 +319,19 @@ public class GestorAFIP {
             String cadenaObsercaciones = "";
             ArrayOfObs obs = caeDetResponse.getObservaciones();
 
-            if(obs != null) {
+            if (obs != null) {
                 cadenaObsercaciones = this.getCadenaObservaciones(obs);
 
-                if(cadenaObsercaciones.contains("10016")) {
-                    long ultimoCompAuth = this.getNumeroUltimoComprobanteAutorizado(this.getPuntoDeVenta(), comprobanteTipo);
+                if (cadenaObsercaciones.contains("10016")) {
+                    long ultimoCompAuth = this.getNumeroUltimoComprobanteAutorizado(this.getPuntoDeVenta(), tipoComprobante);
 
                     cadenaObsercaciones += " El ultimo número de comprobante autorizado (con CAE) para este tipo de comprobante fue el " + ultimoCompAuth + ".";
                 }
             }
 
             //Si está el número de CAE de AFIP lo seteamos al comprobante.
-            if(caeDetResponse.getResultado().equals(this.COMPROBANTE_APROBADO) &&
-                    caeDetResponse.getCAE() != null && ! caeDetResponse.getCAE().equals("")) {
+            if (caeDetResponse.getResultado().equals(this.COMPROBANTE_APROBADO) &&
+                    caeDetResponse.getCAE() != null && !caeDetResponse.getCAE().equals("")) {
 
                 /*
                 System.out.println("--------CAE OBTENIDO--------");
@@ -341,12 +340,12 @@ public class GestorAFIP {
                 System.out.println("Observacines CAE: " + cadenaObsercaciones);
                 */
 
-                caeResult.setComprobanteNumero(compDetRequest.getCbteDesde());
+                caeResult.setComprobanteNumero(pedidoAutorizacion.getCbteDesde());
                 caeResult.setCaeNumero(Long.parseLong(caeDetResponse.getCAE()));
 
                 try {
                     caeResult.setCaeFechaVencimiento(new SimpleDateFormat("yyyyMMdd").parse(caeDetResponse.getCAEFchVto()));
-                } catch(ParseException pe) {
+                } catch (ParseException pe) {
                     throw new RuntimeException(pe.getMessage());
                 }
 
@@ -365,6 +364,7 @@ public class GestorAFIP {
      * Creamos el objeto FEAuthRequest con la información del ticket
      * de acceso de la AFIP (obtenido previamente y almacenado en la
      * base de datos).
+     *
      * @return
      */
     private FEAuthRequest getObjetoFEAuthRequest() {
@@ -383,6 +383,7 @@ public class GestorAFIP {
 
     /**
      * Convertimos un objeto request a un string para armar el request (la solicitud)
+     *
      * @param req
      * @param requestClass
      * @return
@@ -400,7 +401,7 @@ public class GestorAFIP {
             m.marshal(req, writer);
 
             reqXML = writer.toString();
-        } catch(Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(e);
         }
@@ -410,20 +411,21 @@ public class GestorAFIP {
 
     /**
      * Convierte un arreglo de errores en una cadena.
+     *
      * @param errores
      * @return
      */
     private String getCadenaErrores(ArrayOfErr errores) {
         String cadenaErrores = "";
 
-        if(errores != null) {
+        if (errores != null) {
             System.out.println("OCURRIERON ERRORES AL CONSULTAR WEBSERVICE AFIP");
 
-            for(Err error : errores.getErr()) {
-                if(error != null) {
+            for (Err error : errores.getErr()) {
+                if (error != null) {
                     String cadenaEr = "Error código: " + error.getCode();
 
-                    if(error.getMsg() != null && ! error.getMsg().equals("")) {
+                    if (error.getMsg() != null && !error.getMsg().equals("")) {
                         cadenaEr += " - Mensaje: " + error.getMsg();
                     }
 
@@ -438,20 +440,21 @@ public class GestorAFIP {
 
     /**
      * Convierte un arreglo de observaciones en una cadena.
+     *
      * @param observaciones
      * @return
      */
     private String getCadenaObservaciones(ArrayOfObs observaciones) {
         String cadenaObservaciones = "";
 
-        if(observaciones != null) {
+        if (observaciones != null) {
             System.out.println("HAY OBSERVACIONES AL CONSULTAR WEBSERVICE AFIP");
 
-            for(Obs obs : observaciones.getObs()) {
-                if(obs != null) {
+            for (Obs obs : observaciones.getObs()) {
+                if (obs != null) {
                     String cadenaObs = "Observación código: " + obs.getCode();
 
-                    if(obs.getMsg() != null && ! obs.getMsg().equals("")) {
+                    if (obs.getMsg() != null && !obs.getMsg().equals("")) {
                         cadenaObs += " - Mensaje: " + obs.getMsg();
                     }
 
@@ -466,20 +469,21 @@ public class GestorAFIP {
 
     /**
      * Convierte un arreglo de observaciones en una cadena.
+     *
      * @param eventos
      * @return
      */
     private String getCadenaEventos(ArrayOfEvt eventos) {
         String cadenaEventos = "";
 
-        if(eventos != null) {
+        if (eventos != null) {
             System.out.println("HAY EVENTOS AL CONSULTAR WEBSERVICE AFIP");
 
-            for(Evt evt : eventos.getEvt()) {
-                if(evt != null) {
+            for (Evt evt : eventos.getEvt()) {
+                if (evt != null) {
                     String cadenaEvt = "Evento código: " + evt.getCode();
 
-                    if(evt.getMsg() != null && ! evt.getMsg().equals("")) {
+                    if (evt.getMsg() != null && !evt.getMsg().equals("")) {
                         cadenaEvt += " - Mensaje: " + evt.getMsg();
                     }
 
@@ -515,7 +519,7 @@ public class GestorAFIP {
 
         ArrayOfErr errores = compUAResponse.getFECompUltimoAutorizadoResult().getErrors();
 
-        if(errores != null) {
+        if (errores != null) {
             throw new RuntimeException(this.getCadenaErrores(errores));
         }
 
@@ -549,7 +553,7 @@ public class GestorAFIP {
 
         ArrayOfErr errores = compConsultarResponse.getFECompConsultarResult().getErrors();
 
-        if(errores != null) {
+        if (errores != null) {
             throw new RuntimeException(this.getCadenaErrores(errores));
         }
 
@@ -581,7 +585,7 @@ public class GestorAFIP {
 
         ArrayOfErr errores = compConsultarResponse.getFECompConsultarResult().getErrors();
 
-        if(errores != null) {
+        if (errores != null) {
             throw new RuntimeException(this.getCadenaErrores(errores));
         }
 
@@ -591,21 +595,21 @@ public class GestorAFIP {
         String cadenaObsercaciones = "";
         ArrayOfObs obs = caeResultGet.getObservaciones();
 
-        if(obs != null) {
+        if (obs != null) {
             cadenaObsercaciones = this.getCadenaObservaciones(obs);
             mensajes += cadenaObsercaciones;
         }
 
         //Si está el número de CAE de AFIP lo seteamos al comprobante.
-        if(caeResultGet.getResultado().equals(this.COMPROBANTE_APROBADO) &&
-                caeResultGet.getResultado() != null && ! caeResultGet.getResultado().equals("")) {
+        if (caeResultGet.getResultado().equals(this.COMPROBANTE_APROBADO) &&
+                caeResultGet.getResultado() != null && !caeResultGet.getResultado().equals("")) {
 
             caeResult.setComprobanteNumero(compNumero);
             caeResult.setCaeNumero(Long.parseLong(caeResultGet.getCodAutorizacion()));
 
             try {
                 caeResult.setCaeFechaVencimiento(new SimpleDateFormat("yyyyMMdd").parse(caeResultGet.getFchVto()));
-            } catch(ParseException pe) {
+            } catch (ParseException pe) {
                 throw new RuntimeException(pe.getMessage());
             }
 

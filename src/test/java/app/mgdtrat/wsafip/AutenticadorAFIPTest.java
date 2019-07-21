@@ -18,11 +18,11 @@ import org.junit.Test;
  *
  * @author itraverso
  */
-public class AuntenticadorAFIPTest {
+public class AutenticadorAFIPTest {
 
-    GestorDeConfiguracion gestorConfig;
+    private GestorDeConfiguracion gestorConfig;
 
-    public AuntenticadorAFIPTest() {
+    public AutenticadorAFIPTest() {
        this.gestorConfig = GestorDeConfiguracion.getInstance();
     }
 

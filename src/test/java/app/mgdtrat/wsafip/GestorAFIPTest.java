@@ -72,7 +72,7 @@ public class GestorAFIPTest {
         */
         int tipoDeComprobante = 1; //1: Factura A
 
-        CAEResult caeResult = this.gafip.solicitarCAE(this.setearComprobanteParaTestear(tipoDeComprobante), tipoDeComprobante);
+        CAEResult caeResult = this.gafip.solicitarCAE(tipoDeComprobante, this.setearComprobanteParaTestear(tipoDeComprobante));
 
         System.out.println("--------CAE OBTENIDO--------");
         System.out.println("Número de CAE: " + caeResult.getCaeNumero());
