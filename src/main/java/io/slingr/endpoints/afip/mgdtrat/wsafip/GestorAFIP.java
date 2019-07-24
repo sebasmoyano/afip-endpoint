@@ -5,7 +5,7 @@
  */
 package io.slingr.endpoints.afip.mgdtrat.wsafip;
 
-import fev1.dif.afip.gov.ar.*;
+import io.slingr.endpoints.afip.fev1.dif.afip.gov.ar.*;
 import io.slingr.endpoints.afip.mgdtrat.util.GestorDeConfiguracion;
 
 import javax.xml.bind.JAXBContext;
@@ -34,12 +34,8 @@ public class GestorAFIP {
     private static final String COMPROBANTE_RECHAZADO = "R";
     private static final String COMPROBANTE_RECHAZADO_PARCIAL = "P";
 
-    public GestorAFIP() {
-        super();
-        init();
-    }
 
-    private void init() {
+    public void inicializar() {
         this.gestorConfig = GestorDeConfiguracion.getInstance();
 
         System.setProperty("http.proxyHost", this.gestorConfig.getProperty("http_proxy", ""));
@@ -48,14 +44,15 @@ public class GestorAFIP {
         System.setProperty("https.proxyHost", this.gestorConfig.getProperty("http_proxy", ""));
         System.setProperty("https.proxyPort", this.gestorConfig.getProperty("http_proxy_port", ""));
 
-        this.autenticadorAFIP = new AutenticadorAFIP();
+        autenticadorAFIP = new AutenticadorAFIP();
+        autenticadorAFIP.inicializar();
     }
 
 
     private Object ejecutarOperacionWebService(String req, Class responseClass) {
         try {
             URL wsdlLocation = new URL(this.gestorConfig.getProperty("endpointFacturacion"));
-            fev1.dif.afip.gov.ar.Service service = new fev1.dif.afip.gov.ar.Service(wsdlLocation);
+            io.slingr.endpoints.afip.fev1.dif.afip.gov.ar.Service service = new io.slingr.endpoints.afip.fev1.dif.afip.gov.ar.Service(wsdlLocation);
 
             QName portQName = new QName("http://ar.gov.afip.dif.FEV1/", "ServiceSoap12");
 
@@ -76,7 +73,7 @@ public class GestorAFIP {
     }
 
     private String getStringRequestSimple(String nombreOperacion) {
-        TicketAccesoAFIP taAFIP = this.autenticadorAFIP.getTicketAccesoAFIP();
+        TicketAccesoAFIP taAFIP = this.autenticadorAFIP.inicializar();
         String cuit = this.gestorConfig.getProperty("CUIT");
 
         String req = "<" + nombreOperacion + "  xmlns=\"http://ar.gov.afip.dif.FEV1/\"><Auth>" +
@@ -369,7 +366,7 @@ public class GestorAFIP {
      */
     private FEAuthRequest getObjetoFEAuthRequest() {
         //Creamos el objeto autorización.
-        TicketAccesoAFIP taAFIP = this.autenticadorAFIP.getTicketAccesoAFIP();
+        TicketAccesoAFIP taAFIP = this.autenticadorAFIP.inicializar();
         String cuit = this.gestorConfig.getProperty("CUIT");
 
         FEAuthRequest authRequest = new FEAuthRequest();

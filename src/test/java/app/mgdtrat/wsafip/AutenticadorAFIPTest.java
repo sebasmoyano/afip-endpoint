@@ -12,7 +12,6 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Test;
 
 /**
  *
@@ -51,7 +50,7 @@ public class AutenticadorAFIPTest {
 
         //Prueba de autenticación en AFIP, obtención de Ticket de Acceso
         AutenticadorAFIP instance = new AutenticadorAFIP();
-        TicketAccesoAFIP taa = instance.getTicketAccesoAFIP();
+        TicketAccesoAFIP taa = instance.inicializar();
 
         //fail("The test case is a prototype.");
     }

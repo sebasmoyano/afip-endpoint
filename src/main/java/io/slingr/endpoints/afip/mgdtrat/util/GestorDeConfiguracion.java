@@ -32,7 +32,6 @@ public class GestorDeConfiguracion {
 
     public final static String PATH_CONFIG_DIR = System.getProperty("user.home") + "/afip/config/";
     private final static String CONFIG_FILE = "configuracion.properties";
-    public final static String CERT_FILE = "certificado.p12";
 
     private GestorDeConfiguracion() {
         try {
@@ -83,6 +82,6 @@ public class GestorDeConfiguracion {
      * @return
      */
     public String getAbsolutePathConfigurationDir() {
-        return this.PATH_CONFIG_DIR;
+        return PATH_CONFIG_DIR;
     }
 }

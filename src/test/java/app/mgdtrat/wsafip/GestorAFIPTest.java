@@ -5,10 +5,10 @@
  */
 package app.mgdtrat.wsafip;
 
-import fev1.dif.afip.gov.ar.AlicIva;
-import fev1.dif.afip.gov.ar.ArrayOfAlicIva;
-import fev1.dif.afip.gov.ar.FECAEDetRequest;
-import fev1.dif.afip.gov.ar.FECompConsResponse;
+import io.slingr.endpoints.afip.fev1.dif.afip.gov.ar.AlicIva;
+import io.slingr.endpoints.afip.fev1.dif.afip.gov.ar.ArrayOfAlicIva;
+import io.slingr.endpoints.afip.fev1.dif.afip.gov.ar.FECAEDetRequest;
+import io.slingr.endpoints.afip.fev1.dif.afip.gov.ar.FECompConsResponse;
 import io.slingr.endpoints.afip.mgdtrat.util.GestorDeConfiguracion;
 import io.slingr.endpoints.afip.mgdtrat.wsafip.CAEResult;
 import io.slingr.endpoints.afip.mgdtrat.wsafip.GestorAFIP;

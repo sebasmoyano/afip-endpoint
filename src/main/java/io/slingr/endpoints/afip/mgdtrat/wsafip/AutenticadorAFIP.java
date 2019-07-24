@@ -1,5 +1,6 @@
 package io.slingr.endpoints.afip.mgdtrat.wsafip;
 
+import io.slingr.endpoints.afip.AfipEndpoint;
 import io.slingr.endpoints.afip.mgdtrat.util.GestorDeConfiguracion;
 import org.apache.axis.client.Call;
 import org.apache.axis.client.Service;
@@ -18,6 +19,8 @@ import org.bouncycastle.operator.jcajce.JcaDigestCalculatorProviderBuilder;
 import org.bouncycastle.util.Store;
 import org.dom4j.Document;
 import org.dom4j.io.SAXReader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.xml.bind.DatatypeConverter;
 import javax.xml.rpc.ParameterMode;
@@ -34,9 +37,12 @@ import java.util.Date;
 /**
  * Se comunica con el WS de AFIP de Autenticación y
  * Autorización de Testing.
+ *
  * @author itraverso
  */
 public class AutenticadorAFIP {
+
+    private static final Logger logger = LoggerFactory.getLogger(AfipEndpoint.class);
 
     private GestorDeConfiguracion gestorConfig;
     private TicketAccesoAFIP taAFIP;
@@ -58,7 +64,7 @@ public class AutenticadorAFIP {
             String sign = this.gestorConfig.getProperty("sign");
             String expiracionTRA = this.gestorConfig.getProperty("expiracionTRA");
 
-            if(token != null && ! token.isEmpty()) {
+            if (token != null && !token.isEmpty()) {
                 this.taAFIP.setToken(token);
                 this.taAFIP.setSign(sign);
 
@@ -70,11 +76,10 @@ public class AutenticadorAFIP {
         }
     }
 
-    public TicketAccesoAFIP getTicketAccesoAFIP() {
-        if(! this.taAFIP.estaActivoTAAFIP()) {
+    public TicketAccesoAFIP inicializar() {
+        if (!this.taAFIP.estaActivoTAAFIP()) {
             this.autenticacionYAutorizacion();
         }
-
         return this.taAFIP;
     }
 
@@ -83,11 +88,16 @@ public class AutenticadorAFIP {
 
         String endpoint = this.gestorConfig.getProperty("endpointAutenticacion");
         String service = this.gestorConfig.getProperty("service");
-        String dstDN = this.gestorConfig.getProperty("destinoServicio");
-
+        String dstDN = this.gestorConfig.getProperty("dstdn");
         String p12file = this.gestorConfig.getAbsolutePathConfigurationDir() + this.gestorConfig.getProperty("keystore");
         String signer = this.gestorConfig.getProperty("keystore-signer");
         String p12pass = this.gestorConfig.getProperty("keystore-password");
+
+        File fCertificadoP12 = new File(p12file);
+        //Si no existe el certificado.p12 lo genero
+        if (!fCertificadoP12.exists()) {
+            this.generarCertificadoP12();
+        }
 
         // Set proxy system vars
         System.setProperty("http.proxyHost", this.gestorConfig.getProperty("http_proxy", ""));
@@ -100,11 +110,11 @@ public class AutenticadorAFIP {
         Long ticketTime = Long.valueOf(this.gestorConfig.getProperty("TicketTime"));
 
         // Create LoginTicketRequest_xml_cms
-        byte [] loginTicketRequest_xml_cms = crearCMS(p12file, p12pass, signer, dstDN, service, ticketTime);
+        byte[] loginTicketRequest_xml_cms = crearCMS(p12file, p12pass, signer, dstDN, service, ticketTime);
 
         // Invoke AFIP wsaa and get LoginTicketResponse
         try {
-            loginTicketResponse = invocarWSAA(loginTicketRequest_xml_cms, endpoint );
+            loginTicketResponse = invocarWSAA(loginTicketRequest_xml_cms, endpoint);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -130,7 +140,7 @@ public class AutenticadorAFIP {
         }
     }
 
-    private static String invocarWSAA(byte [] loginTicketRequest_xml_cms, String endpoint) throws Exception {
+    private static String invocarWSAA(byte[] loginTicketRequest_xml_cms, String endpoint) throws Exception {
         String loginTicketResponse;
 
         Service service = new Service();
@@ -139,7 +149,7 @@ public class AutenticadorAFIP {
         //
         // Prepare the call for the Web service
         //
-        call.setTargetEndpointAddress( new java.net.URL(endpoint) );
+        call.setTargetEndpointAddress(new java.net.URL(endpoint));
         call.setOperationName("loginCms");
         call.addParameter("request", XMLType.XSD_STRING, ParameterMode.IN);
         call.setReturnType(XMLType.XSD_STRING);
@@ -147,8 +157,8 @@ public class AutenticadorAFIP {
         //
         // Make the actual call and assign the answer to a String
         //
-        loginTicketResponse = (String) call.invoke(new Object [] {
-                Base64.encode (loginTicketRequest_xml_cms) } );
+        loginTicketResponse = (String) call.invoke(new Object[]{
+                Base64.encode(loginTicketRequest_xml_cms)});
 
         return loginTicketResponse;
     }
@@ -158,7 +168,7 @@ public class AutenticadorAFIP {
      * Crea el mensaje CMS del tipo “SignedData” que contiene el mensaje
      * el LoginTicketRequest.xml y su firma electrónica utilizando
      * SHA1+RSA. De esta forma, se obtiene el TRA (LoginTicketRequest.xml.cms).
-     *
+     * <p>
      * CMS: Cryptographic Message Syntax
      *
      * @param p12file
@@ -169,11 +179,11 @@ public class AutenticadorAFIP {
      * @param ticketTime
      * @return
      */
-    private static byte [] crearCMS(String p12file, String p12pass, String signer, String dstDN, String service, Long ticketTime) {
+    private static byte[] crearCMS(String p12file, String p12pass, String signer, String dstDN, String service, Long ticketTime) {
 
         PrivateKey pKey = null;
         X509Certificate pCertificate = null;
-        byte [] asn1_cms = null;
+        byte[] asn1_cms = null;
         Store certs = null;
         String loginTicketRequest_xml;
         String signerDN = null;
@@ -198,7 +208,7 @@ public class AutenticadorAFIP {
             ArrayList<X509Certificate> certList = new ArrayList<X509Certificate>();
             certList.add(pCertificate);
 
-            if(Security.getProvider("BC") == null) {
+            if (Security.getProvider("BC") == null) {
                 Security.addProvider(new BouncyCastleProvider());
             }
 
@@ -206,7 +216,7 @@ public class AutenticadorAFIP {
 
             //cstore = CertStore.getInstance("Collection", new CollectionCertStoreParameters(certList), "BC");
 
-        } catch(Exception e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
 
@@ -277,19 +287,102 @@ public class AutenticadorAFIP {
         String uniqueId = new Long(ahora.getTime() / 1000).toString();
 
         LoginTicketRequest_xml = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>"
-                +"<loginTicketRequest version=\"1.0\">"
-                +"<header>"
-                +"<source>" + signerDN + "</source>"
-                +"<destination>" + dstDN + "</destination>"
-                +"<uniqueId>" + uniqueId + "</uniqueId>"
-                +"<generationTime>" + xmlGenTime + "</generationTime>"
-                +"<expirationTime>" + xmlExpTime + "</expirationTime>"
-                +"</header>"
-                +"<service>" + service + "</service>"
-                +"</loginTicketRequest>";
+                + "<loginTicketRequest version=\"1.0\">"
+                + "<header>"
+                + "<source>" + signerDN + "</source>"
+                + "<destination>" + dstDN + "</destination>"
+                + "<uniqueId>" + uniqueId + "</uniqueId>"
+                + "<generationTime>" + xmlGenTime + "</generationTime>"
+                + "<expirationTime>" + xmlExpTime + "</expirationTime>"
+                + "</header>"
+                + "<service>" + service + "</service>"
+                + "</loginTicketRequest>";
 
         //System.out.println("TRA: " + LoginTicketRequest_xml);
 
         return (LoginTicketRequest_xml);
+    }
+
+    /*
+     *  Genero el certificado p12 utilizando la clave privada y el certificado .crt (que obtuve en la
+     *  web de AFIP), utilizo un signer y un password.
+     */
+    private void generarCertificadoP12() {
+        logger.info("Configurando certificado");
+
+        crearArchivoClavePrivada();
+        crearArchivoCertificadoCrt();
+
+        String pathArchivoClavePrivada = this.gestorConfig.getAbsolutePathConfigurationDir() + "clavePrivada.key";
+        String pathArchivoCertificadoCrt = this.gestorConfig.getAbsolutePathConfigurationDir() + "certificado.crt";
+        String pathArchivoCertificadoP12 = this.gestorConfig.getAbsolutePathConfigurationDir() + "certificado.p12";
+
+        //Signer y passwrod a utilizar para crear el certificado p12
+        String p12Signer = this.gestorConfig.getProperty("keystore-signer");
+        String p12Password = this.gestorConfig.getProperty("keystore-password");
+
+        //Genero el certificado p12
+        String command = "openssl pkcs12 -export -inkey " + pathArchivoClavePrivada + " -in " + pathArchivoCertificadoCrt + " -out " + pathArchivoCertificadoP12 + " -name " + p12Signer + " -password pass:" + p12Password;
+        Runtime r = Runtime.getRuntime();
+        try {
+            r.exec(command, null, new File(this.gestorConfig.getAbsolutePathConfigurationDir()));
+        } catch(IOException ioe) {
+            throw new RuntimeException(ioe);
+        }
+        // wait a bit until
+        try {
+            Thread.sleep(2 * 100);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Creo el archivo clavePrivada.key cuyo contenido se encuentra en una variable en el
+     * archivo de configuración.
+     */
+    private void crearArchivoClavePrivada() {
+        String cadenaClavePrivada = this.gestorConfig.getProperty("cadenaClavePrivada");
+        File fClavePrivada = new File(this.gestorConfig.getAbsolutePathConfigurationDir() +  "clavePrivada.key");
+
+        if (! fClavePrivada.exists()) {
+            try(OutputStream fosClavePrivada = new FileOutputStream(fClavePrivada)) {
+                fClavePrivada.createNewFile();
+
+                byte[] contentInBytes = cadenaClavePrivada.getBytes();
+
+                fosClavePrivada.write(contentInBytes);
+                fosClavePrivada.flush();
+            } catch (FileNotFoundException fnfe) {
+                throw new RuntimeException(fnfe);
+            } catch (IOException ioe) {
+                throw new RuntimeException(ioe);
+            }
+        }
+    }
+
+    /**
+     * Creo el certificado.crt cuyo contenido se encuentra en una variable en el
+     * archivo de configuración.
+     */
+    private void crearArchivoCertificadoCrt() {
+        String cadenaCertificadoCrt = this.gestorConfig.getProperty("cadenaCertificadoCrt");
+        File fCertificadoCrt = new File(this.gestorConfig.getAbsolutePathConfigurationDir() +  "certificado.crt");
+
+        if (! fCertificadoCrt.exists()) {
+            try(OutputStream fosCertificadoCrt = new FileOutputStream(fCertificadoCrt)) {
+                fCertificadoCrt.createNewFile();
+
+                byte[] contentInBytes = cadenaCertificadoCrt.getBytes();
+
+                fosCertificadoCrt.write(contentInBytes);
+                fosCertificadoCrt.flush();
+
+            } catch (FileNotFoundException fnfe) {
+                throw new RuntimeException(fnfe);
+            } catch (IOException ioe) {
+                throw new RuntimeException(ioe);
+            }
+        }
     }
 }

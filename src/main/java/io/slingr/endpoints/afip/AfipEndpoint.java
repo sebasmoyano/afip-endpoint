@@ -1,29 +1,22 @@
 package io.slingr.endpoints.afip;
 
-import fev1.dif.afip.gov.ar.AlicIva;
-import fev1.dif.afip.gov.ar.ArrayOfAlicIva;
-import fev1.dif.afip.gov.ar.FECAEDetRequest;
+import io.slingr.endpoints.afip.fev1.dif.afip.gov.ar.AlicIva;
+import io.slingr.endpoints.afip.fev1.dif.afip.gov.ar.ArrayOfAlicIva;
+import io.slingr.endpoints.afip.fev1.dif.afip.gov.ar.FECAEDetRequest;
 import io.slingr.endpoints.Endpoint;
 import io.slingr.endpoints.afip.mgdtrat.util.GestorDeConfiguracion;
 import io.slingr.endpoints.afip.mgdtrat.wsafip.CAEResult;
 import io.slingr.endpoints.afip.mgdtrat.wsafip.GestorAFIP;
-import io.slingr.endpoints.framework.annotations.*;
+import io.slingr.endpoints.framework.annotations.ApplicationLogger;
+import io.slingr.endpoints.framework.annotations.EndpointConfiguration;
+import io.slingr.endpoints.framework.annotations.EndpointFunction;
+import io.slingr.endpoints.framework.annotations.SlingrEndpoint;
 import io.slingr.endpoints.services.AppLogs;
-import io.slingr.endpoints.services.rest.RestMethod;
 import io.slingr.endpoints.utils.Json;
-import io.slingr.endpoints.ws.exchange.FunctionRequest;
-import io.slingr.endpoints.ws.exchange.WebServiceRequest;
-import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Random;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 @SlingrEndpoint(name = "afip")
 public class AfipEndpoint extends Endpoint {
@@ -45,31 +38,18 @@ public class AfipEndpoint extends Endpoint {
     public void endpointStarted() {
         logger.info("Endpoint is started");
 
-        gafip = new GestorAFIP();
-
-        // TODO: copiar o generar certificado
-        String certificadoContent = configuration.string("certificado");
-        try {
-            String certificadoPath = GestorDeConfiguracion.PATH_CONFIG_DIR + GestorDeConfiguracion.CERT_FILE;
-            FileUtils.writeStringToFile(new File(certificadoPath), certificadoContent, UTF_8);
-        } catch (IOException e) {
-            throw new RuntimeException("Can not copy certificate", e);
-        }
-
-        // TODO: copiar logo
-
         // inicializar propiedades
         GestorDeConfiguracion.getInstance().setProperty("empresaNombre", configuration.string("empresaNombre"));
         GestorDeConfiguracion.getInstance().setProperty("empresaDatos1", configuration.string("empresaDireccion"));
-        GestorDeConfiguracion.getInstance().setProperty("empresaDatos2", configuration.string("empresaTelefono"));
-        GestorDeConfiguracion.getInstance().setProperty("empresaDatos3", configuration.string("empresaEmail"));
-        GestorDeConfiguracion.getInstance().setProperty("empresaDatos4", configuration.string("empresaSitioWeb"));
+        GestorDeConfiguracion.getInstance().setProperty("empresaDatos2", configuration.string("empresaTelefono", ""));
+        GestorDeConfiguracion.getInstance().setProperty("empresaDatos3", configuration.string("empresaEmail", ""));
+        GestorDeConfiguracion.getInstance().setProperty("empresaDatos4", configuration.string("empresaSitioWeb", ""));
         GestorDeConfiguracion.getInstance().setProperty("empresaTipoContribuyente", configuration.string("empresaTipoContribuyente"));
         GestorDeConfiguracion.getInstance().setProperty("empresaCuit", configuration.string("empresaCuit"));
-        GestorDeConfiguracion.getInstance().setProperty("empresaIIBB", configuration.string("empresaIngresosBrutos"));
-        GestorDeConfiguracion.getInstance().setProperty("empresaEstablecimiento", configuration.string("empresaEstablecimiento"));
-        GestorDeConfiguracion.getInstance().setProperty("empresaSede", configuration.string("empresaSede"));
-        GestorDeConfiguracion.getInstance().setProperty("empresaInicioActividad", configuration.string("empresaInicioActividad"));
+        GestorDeConfiguracion.getInstance().setProperty("empresaIIBB", configuration.string("empresaIngresosBrutos", ""));
+        GestorDeConfiguracion.getInstance().setProperty("empresaEstablecimiento", configuration.string("empresaEstablecimiento", ""));
+        GestorDeConfiguracion.getInstance().setProperty("empresaSede", configuration.string("empresaSede", ""));
+        GestorDeConfiguracion.getInstance().setProperty("empresaInicioActividad", configuration.string("empresaInicioActividad", ""));
 
         GestorDeConfiguracion.getInstance().setProperty("CUIT", configuration.string("empresaCuit").replaceAll("-", ""));
         GestorDeConfiguracion.getInstance().setProperty("puntoDeVenta", configuration.string("puntoVenta"));
@@ -77,8 +57,17 @@ public class AfipEndpoint extends Endpoint {
         GestorDeConfiguracion.getInstance().setProperty("endpointAutenticacion", configuration.string("endpointAutenticacion"));
         GestorDeConfiguracion.getInstance().setProperty("endpointFacturacion", configuration.string("endpointFacturacion"));
         GestorDeConfiguracion.getInstance().setProperty("dstdn", configuration.string("destinoServicio"));
-        GestorDeConfiguracion.getInstance().setProperty("keystore-signer", configuration.string("certificadoFirmante"));
-        GestorDeConfiguracion.getInstance().setProperty("keystore-password", configuration.string("certificadoPassword"));
+
+        // if the user puts the private key with \n we need to convert it accordingly
+        String clavePrivada = configuration.string("clavePrivada").replaceAll("\\\\n", "\n");
+        GestorDeConfiguracion.getInstance().setProperty("cadenaClavePrivada", clavePrivada);
+        GestorDeConfiguracion.getInstance().setProperty("cadenaCertificadoCrt", configuration.string("certificado"));
+
+        gafip = new GestorAFIP();
+        gafip.inicializar();
+
+
+        // TODO: copiar logo
     }
 
 
@@ -121,8 +110,13 @@ public class AfipEndpoint extends Endpoint {
     private FECAEDetRequest generarPedidoAutorizacion(Json payload) {
         FECAEDetRequest compDetRequest = new FECAEDetRequest();
         compDetRequest.setConcepto(payload.integer("concepto", 1)); // ID: 1 - Producto; ID: 2 - Servicios; ID: 3 - Productos y Servicios
-        compDetRequest.setDocTipo(payload.integer("tipoDocumento")); // Tipo Documento => ID: 80 - CUIT; ID: 96 - DNI; ID: 86 - CUIL
-        compDetRequest.setDocNro(payload.longInteger("numeroDocument")); // Número documento
+        if (!payload.isEmpty("tipoDocumento")) {
+            compDetRequest.setDocTipo(payload.integer("tipoDocumento")); // Tipo Documento => ID: 80 - CUIT; ID: 96 - DNI; ID: 86 - CUIL
+        }
+        if (!payload.isEmpty("numeroDocumento")) {
+            String numeroDocumento = payload.string("numeroDocumento").replaceAll("-", "");
+            compDetRequest.setDocNro(Long.parseLong(numeroDocumento)); // Número documento
+        }
         compDetRequest.setCbteFch(payload.string("fecha")); // Fecha del comprobante
         // Importe total del comprobante
         compDetRequest.setImpTotal(payload.decimal("total")); // Monto Total
