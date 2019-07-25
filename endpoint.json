@@ -16,7 +16,12 @@
         "allowMultipleInstances": false
     },
     "status": "ACTIVE",
-    "stores": [],
+    "stores": [
+        {
+            "name": "config"
+
+        }
+    ],
     "functions": [
         {
             "label": "Autorizar comprobante",

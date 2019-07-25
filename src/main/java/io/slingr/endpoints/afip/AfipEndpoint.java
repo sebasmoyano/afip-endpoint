@@ -7,11 +7,9 @@ import io.slingr.endpoints.Endpoint;
 import io.slingr.endpoints.afip.mgdtrat.util.GestorDeConfiguracion;
 import io.slingr.endpoints.afip.mgdtrat.wsafip.CAEResult;
 import io.slingr.endpoints.afip.mgdtrat.wsafip.GestorAFIP;
-import io.slingr.endpoints.framework.annotations.ApplicationLogger;
-import io.slingr.endpoints.framework.annotations.EndpointConfiguration;
-import io.slingr.endpoints.framework.annotations.EndpointFunction;
-import io.slingr.endpoints.framework.annotations.SlingrEndpoint;
+import io.slingr.endpoints.framework.annotations.*;
 import io.slingr.endpoints.services.AppLogs;
+import io.slingr.endpoints.services.datastores.DataStore;
 import io.slingr.endpoints.utils.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,6 +23,9 @@ public class AfipEndpoint extends Endpoint {
 
     @ApplicationLogger
     private AppLogs appLogger;
+
+    @EndpointDataStore(name = "config")
+    private DataStore configStore;
 
     private GestorAFIP gafip;
 
@@ -64,7 +65,7 @@ public class AfipEndpoint extends Endpoint {
         GestorDeConfiguracion.getInstance().setProperty("cadenaCertificadoCrt", configuration.string("certificado"));
 
         gafip = new GestorAFIP();
-        gafip.inicializar();
+        gafip.inicializar(configStore);
 
 
         // TODO: copiar logo
@@ -123,11 +124,11 @@ public class AfipEndpoint extends Endpoint {
         // Importe neto no gravado
         compDetRequest.setImpTotConc(0);
         // Importe neto gravado
-        compDetRequest.setImpNeto(100);
+        compDetRequest.setImpNeto(payload.decimal("totalNeto"));
         // Importe exento
         compDetRequest.setImpOpEx(0);
         // Importe IVA
-        compDetRequest.setImpIVA(payload.decimal("porcentajeIva"));
+        compDetRequest.setImpIVA(payload.decimal("impuestos"));
         //Suma de los importes del array de tributos
         compDetRequest.setImpTrib(0);
         // Moneda
@@ -136,7 +137,7 @@ public class AfipEndpoint extends Endpoint {
         //Si tiene IVA, seteamos la alicuota IVA
         ArrayOfAlicIva alicIvaArreglo = new ArrayOfAlicIva();
         AlicIva alicIva = new  AlicIva();
-        alicIva.setImporte(payload.decimal("porcentajeIva"));
+        alicIva.setImporte(payload.decimal("impuestos"));
         alicIva.setId(5); // ID: 5 - 21%
         alicIva.setBaseImp(100);
         alicIvaArreglo.getAlicIva().add(alicIva);

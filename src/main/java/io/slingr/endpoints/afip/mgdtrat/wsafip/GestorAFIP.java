@@ -7,6 +7,7 @@ package io.slingr.endpoints.afip.mgdtrat.wsafip;
 
 import io.slingr.endpoints.afip.fev1.dif.afip.gov.ar.*;
 import io.slingr.endpoints.afip.mgdtrat.util.GestorDeConfiguracion;
+import io.slingr.endpoints.services.datastores.DataStore;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.Marshaller;
@@ -30,12 +31,15 @@ public class GestorAFIP {
 
     private AutenticadorAFIP autenticadorAFIP;
     private GestorDeConfiguracion gestorConfig;
+    private DataStore configStore;
+
     private static final String COMPROBANTE_APROBADO = "A";
     private static final String COMPROBANTE_RECHAZADO = "R";
     private static final String COMPROBANTE_RECHAZADO_PARCIAL = "P";
 
 
-    public void inicializar() {
+    public void inicializar(DataStore configStore) {
+        this.configStore = configStore;
         this.gestorConfig = GestorDeConfiguracion.getInstance();
 
         System.setProperty("http.proxyHost", this.gestorConfig.getProperty("http_proxy", ""));
@@ -44,7 +48,7 @@ public class GestorAFIP {
         System.setProperty("https.proxyHost", this.gestorConfig.getProperty("http_proxy", ""));
         System.setProperty("https.proxyPort", this.gestorConfig.getProperty("http_proxy_port", ""));
 
-        autenticadorAFIP = new AutenticadorAFIP();
+        autenticadorAFIP = new AutenticadorAFIP(configStore);
         autenticadorAFIP.inicializar();
     }
 

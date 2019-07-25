@@ -36,8 +36,11 @@ public class GestorDeConfiguracion {
     private GestorDeConfiguracion() {
         try {
             String configPath = PATH_CONFIG_DIR + CONFIG_FILE;
-            InputStream resourcesConfigFile = getClass().getClassLoader().getResourceAsStream(CONFIG_FILE);
-            FileUtils.copyInputStreamToFile(resourcesConfigFile, new File(configPath));
+            File configFile = new File(configPath);
+            if (!configFile.exists()) {
+                InputStream resourcesConfigFile = getClass().getClassLoader().getResourceAsStream(CONFIG_FILE);
+                FileUtils.copyInputStreamToFile(resourcesConfigFile, configFile);
+            }
             InputStream archivoConfiguracion = new FileInputStream(configPath);
             this.config = new Properties();
             this.config.load(archivoConfiguracion);
@@ -51,7 +54,6 @@ public class GestorDeConfiguracion {
         if (instance == null) {
             instance = new GestorDeConfiguracion();
         }
-
         return instance;
     }
 

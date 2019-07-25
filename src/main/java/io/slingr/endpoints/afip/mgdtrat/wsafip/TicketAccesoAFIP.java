@@ -38,18 +38,17 @@ public class TicketAccesoAFIP {
         this.expiracionTA = expiracionTA;
     }
 
-     /**
+    /**
      * Retorna true si el TA (Ticket de acceso) está activo,
      * falso en caso contrario.
+     *
      * @return
      */
     public boolean estaActivoTAAFIP() {
         Date now = new Date();
-
-        if(getExpiracionTA() == null || now.compareTo(getExpiracionTA()) > 0) {
+        if (getExpiracionTA() == null || now.compareTo(getExpiracionTA()) > 0) {
             return false;
         }
-
         return true;
     }
 }

@@ -2,6 +2,8 @@ package io.slingr.endpoints.afip.mgdtrat.wsafip;
 
 import io.slingr.endpoints.afip.AfipEndpoint;
 import io.slingr.endpoints.afip.mgdtrat.util.GestorDeConfiguracion;
+import io.slingr.endpoints.services.datastores.DataStore;
+import io.slingr.endpoints.utils.Json;
 import org.apache.axis.client.Call;
 import org.apache.axis.client.Service;
 import org.apache.axis.encoding.Base64;
@@ -44,12 +46,13 @@ public class AutenticadorAFIP {
 
     private static final Logger logger = LoggerFactory.getLogger(AfipEndpoint.class);
 
-    private GestorDeConfiguracion gestorConfig;
+    private GestorDeConfiguracion gestorPropiedades;
     private TicketAccesoAFIP taAFIP;
+    private DataStore configStore;
 
-    public AutenticadorAFIP() {
-        super();
-        this.gestorConfig = GestorDeConfiguracion.getInstance();
+    public AutenticadorAFIP(DataStore configStore) {
+        this.configStore = configStore;
+        this.gestorPropiedades = GestorDeConfiguracion.getInstance();
         this.generarTicketAccesoAFIP();
     }
 
@@ -58,18 +61,25 @@ public class AutenticadorAFIP {
      */
     private void generarTicketAccesoAFIP() {
         this.taAFIP = new TicketAccesoAFIP();
-
         try {
-            String token = this.gestorConfig.getProperty("token");
-            String sign = this.gestorConfig.getProperty("sign");
-            String expiracionTRA = this.gestorConfig.getProperty("expiracionTRA");
+            String token = this.gestorPropiedades.getProperty("token");
+            String sign = this.gestorPropiedades.getProperty("sign");
+            String expiracionTRA = this.gestorPropiedades.getProperty("expiracionTRA");
 
-            if (token != null && !token.isEmpty()) {
-                this.taAFIP.setToken(token);
-                this.taAFIP.setSign(sign);
-
-                SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.S");
-                this.taAFIP.setExpiracionTA(formatter.parse(expiracionTRA));
+            if (token == null || token.isEmpty() || sign == null || sign.isEmpty()) {
+                // retrieve it from data store
+                Json storedConfig = configStore.findOne(Json.map());
+                if (storedConfig != null) {
+                    logger.info("Retrieving from configuration");
+                    token = storedConfig.string("token");
+                    sign = storedConfig.string("sign");
+                    expiracionTRA = storedConfig.string("expiracionTRA");
+                }
+            }
+            this.taAFIP.setToken(token);
+            this.taAFIP.setSign(sign);
+            if (expiracionTRA != null) {
+                this.taAFIP.setExpiracionTA(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.S").parse(expiracionTRA));
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -86,12 +96,12 @@ public class AutenticadorAFIP {
     private void autenticacionYAutorizacion() {
         String loginTicketResponse = null;
 
-        String endpoint = this.gestorConfig.getProperty("endpointAutenticacion");
-        String service = this.gestorConfig.getProperty("service");
-        String dstDN = this.gestorConfig.getProperty("dstdn");
-        String p12file = this.gestorConfig.getAbsolutePathConfigurationDir() + this.gestorConfig.getProperty("keystore");
-        String signer = this.gestorConfig.getProperty("keystore-signer");
-        String p12pass = this.gestorConfig.getProperty("keystore-password");
+        String endpoint = this.gestorPropiedades.getProperty("endpointAutenticacion");
+        String service = this.gestorPropiedades.getProperty("service");
+        String dstDN = this.gestorPropiedades.getProperty("dstdn");
+        String p12file = this.gestorPropiedades.getAbsolutePathConfigurationDir() + this.gestorPropiedades.getProperty("keystore");
+        String signer = this.gestorPropiedades.getProperty("keystore-signer");
+        String p12pass = this.gestorPropiedades.getProperty("keystore-password");
 
         File fCertificadoP12 = new File(p12file);
         //Si no existe el certificado.p12 lo genero
@@ -100,14 +110,14 @@ public class AutenticadorAFIP {
         }
 
         // Set proxy system vars
-        System.setProperty("http.proxyHost", this.gestorConfig.getProperty("http_proxy", ""));
-        System.setProperty("http.proxyPort", this.gestorConfig.getProperty("http_proxy_port", ""));
+        System.setProperty("http.proxyHost", this.gestorPropiedades.getProperty("http_proxy", ""));
+        System.setProperty("http.proxyPort", this.gestorPropiedades.getProperty("http_proxy_port", ""));
 
         // Set the keystore used by SSL
         //System.setProperty("javax.net.ssl.trustStore", this.gestorConfig.getProperty("trustStore"));
         //System.setProperty("javax.net.ssl.trustStorePassword", this.gestorConfig.getProperty("trustStore_password"));
 
-        Long ticketTime = Long.valueOf(this.gestorConfig.getProperty("TicketTime"));
+        Long ticketTime = Long.valueOf(this.gestorPropiedades.getProperty("TicketTime"));
 
         // Create LoginTicketRequest_xml_cms
         byte[] loginTicketRequest_xml_cms = crearCMS(p12file, p12pass, signer, dstDN, service, ticketTime);
@@ -129,9 +139,18 @@ public class AutenticadorAFIP {
             String expiracionTRA = tokenDoc.valueOf("/loginTicketResponse/header/expirationTime");
 
             //Guardo la información de Ticket de Acceso en el archivo de configuración
-            this.gestorConfig.setProperty("token", token);
-            this.gestorConfig.setProperty("sign", sign);
-            this.gestorConfig.setProperty("expiracionTRA", expiracionTRA);
+            this.gestorPropiedades.setProperty("token", token);
+            this.gestorPropiedades.setProperty("sign", sign);
+            this.gestorPropiedades.setProperty("expiracionTRA", expiracionTRA);
+            Json config = this.configStore.findOne(Json.map());
+            if (config == null) {
+                config = Json.map();
+            }
+            config.set("token", token);
+            config.set("sign", sign);
+            config.set("expiracionTRA", expiracionTRA);
+            logger.info("Saving into datastore");
+            this.configStore.save(config);
 
             this.generarTicketAccesoAFIP();
 
@@ -313,20 +332,20 @@ public class AutenticadorAFIP {
         crearArchivoClavePrivada();
         crearArchivoCertificadoCrt();
 
-        String pathArchivoClavePrivada = this.gestorConfig.getAbsolutePathConfigurationDir() + "clavePrivada.key";
-        String pathArchivoCertificadoCrt = this.gestorConfig.getAbsolutePathConfigurationDir() + "certificado.crt";
-        String pathArchivoCertificadoP12 = this.gestorConfig.getAbsolutePathConfigurationDir() + "certificado.p12";
+        String pathArchivoClavePrivada = this.gestorPropiedades.getAbsolutePathConfigurationDir() + "clavePrivada.key";
+        String pathArchivoCertificadoCrt = this.gestorPropiedades.getAbsolutePathConfigurationDir() + "certificado.crt";
+        String pathArchivoCertificadoP12 = this.gestorPropiedades.getAbsolutePathConfigurationDir() + "certificado.p12";
 
         //Signer y passwrod a utilizar para crear el certificado p12
-        String p12Signer = this.gestorConfig.getProperty("keystore-signer");
-        String p12Password = this.gestorConfig.getProperty("keystore-password");
+        String p12Signer = this.gestorPropiedades.getProperty("keystore-signer");
+        String p12Password = this.gestorPropiedades.getProperty("keystore-password");
 
         //Genero el certificado p12
         String command = "openssl pkcs12 -export -inkey " + pathArchivoClavePrivada + " -in " + pathArchivoCertificadoCrt + " -out " + pathArchivoCertificadoP12 + " -name " + p12Signer + " -password pass:" + p12Password;
         Runtime r = Runtime.getRuntime();
         try {
-            r.exec(command, null, new File(this.gestorConfig.getAbsolutePathConfigurationDir()));
-        } catch(IOException ioe) {
+            r.exec(command, null, new File(this.gestorPropiedades.getAbsolutePathConfigurationDir()));
+        } catch (IOException ioe) {
             throw new RuntimeException(ioe);
         }
         // wait a bit until
@@ -342,11 +361,11 @@ public class AutenticadorAFIP {
      * archivo de configuración.
      */
     private void crearArchivoClavePrivada() {
-        String cadenaClavePrivada = this.gestorConfig.getProperty("cadenaClavePrivada");
-        File fClavePrivada = new File(this.gestorConfig.getAbsolutePathConfigurationDir() +  "clavePrivada.key");
+        String cadenaClavePrivada = this.gestorPropiedades.getProperty("cadenaClavePrivada");
+        File fClavePrivada = new File(this.gestorPropiedades.getAbsolutePathConfigurationDir() + "clavePrivada.key");
 
-        if (! fClavePrivada.exists()) {
-            try(OutputStream fosClavePrivada = new FileOutputStream(fClavePrivada)) {
+        if (!fClavePrivada.exists()) {
+            try (OutputStream fosClavePrivada = new FileOutputStream(fClavePrivada)) {
                 fClavePrivada.createNewFile();
 
                 byte[] contentInBytes = cadenaClavePrivada.getBytes();
@@ -366,11 +385,11 @@ public class AutenticadorAFIP {
      * archivo de configuración.
      */
     private void crearArchivoCertificadoCrt() {
-        String cadenaCertificadoCrt = this.gestorConfig.getProperty("cadenaCertificadoCrt");
-        File fCertificadoCrt = new File(this.gestorConfig.getAbsolutePathConfigurationDir() +  "certificado.crt");
+        String cadenaCertificadoCrt = this.gestorPropiedades.getProperty("cadenaCertificadoCrt");
+        File fCertificadoCrt = new File(this.gestorPropiedades.getAbsolutePathConfigurationDir() + "certificado.crt");
 
-        if (! fCertificadoCrt.exists()) {
-            try(OutputStream fosCertificadoCrt = new FileOutputStream(fCertificadoCrt)) {
+        if (!fCertificadoCrt.exists()) {
+            try (OutputStream fosCertificadoCrt = new FileOutputStream(fCertificadoCrt)) {
                 fCertificadoCrt.createNewFile();
 
                 byte[] contentInBytes = cadenaCertificadoCrt.getBytes();
