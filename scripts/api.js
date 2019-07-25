@@ -12,3 +12,12 @@
 endpoint.autorizarComprobante = function (datosComprobante) {
     return endpoint._autorizarComprobante(datosComprobante);
 };
+
+/**
+ * Exporta los datos de un comprobante a PDF.
+ *
+ * @returns la ruta al archivo generado
+ */
+endpoint.imprimirComprobante = function (datosComprobante) {
+    return endpoint._imprimirComprobante(datosComprobante);
+};

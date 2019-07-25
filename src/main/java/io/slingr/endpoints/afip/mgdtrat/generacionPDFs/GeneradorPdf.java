@@ -18,21 +18,19 @@ import java.net.URL;
 import java.util.HashMap;
 
 /**
- *
  * @author itraverso
  */
 public class GeneradorPdf {
 
     /*
-    * @Param nombreJRXML String
-    * @param nombreArchivoSalida
-    * @return void
-    * */
-    private static void generarReporte(String nombreJRXML, String nombreArchivoSalida, HashMap<String, Object> params) {
+     * @Param nombreJRXML String
+     * @param nombreArchivoSalida
+     * @return void
+     * */
+    private static String generarReporte(String nombreJRXML, String nombreArchivoSalida, HashMap<String, Object> params) {
+        String tempDir = System.getProperty("java.io.tmpdir");
+        String pathRArchivoSalida = tempDir + "/" + nombreArchivoSalida; // Path relativo al archivo
         try {
-            String tempDir = System.getProperty("java.io.tmpdir");
-            String pathRArchivoSalida = tempDir + "/" + nombreArchivoSalida; //Path relativo al archivo
-
             ClassLoader cl = Thread.currentThread().getContextClassLoader();
             System.out.println("Nombre reporte: " + nombreJRXML);
             InputStream pathRFileJRXML = cl.getResource("comprobantesPlantillas/" + nombreJRXML).openStream();
@@ -59,23 +57,20 @@ public class GeneradorPdf {
             print.addPage(triplicado);
 
             //JasperViewer.viewReport(print); //El viewer de jasper report
-
             OutputStream output = new FileOutputStream(new File(pathRArchivoSalida));
-
             JasperExportManager.exportReportToPdfStream(print, output);
-
             output.close();
-
-        } catch(FileNotFoundException fnfe) {
+        } catch (FileNotFoundException fnfe) {
             throw new RuntimeException(fnfe);
-        } catch(IOException ioe) {
+        } catch (IOException ioe) {
             throw new RuntimeException(ioe);
-        } catch(JRException jre) {
+        } catch (JRException jre) {
             throw new RuntimeException(jre);
         }
+        return pathRArchivoSalida;
     }
 
-    public static void impresionComprobanteFiscal(ComprobanteFiscalImpresion comprobanteFiscalImpresion) {
+    public static String  impresionComprobanteFiscal(ComprobanteFiscalImpresion comprobanteFiscalImpresion) {
         String nombreJRXML = "comprobanteFiscalTemplate.jrxml";
         String nombreArchivoSalida = (comprobanteFiscalImpresion.getComprobanteTipo()).replace(' ', '_') + "-" + comprobanteFiscalImpresion.getComprobanteLetra() + "-" + comprobanteFiscalImpresion.getComprobanteNumero() + ".pdf";
 
@@ -88,18 +83,17 @@ public class GeneradorPdf {
         params.putAll(GeneradorPdf.getDatosEstaticosDelComprobante());
         params.putAll(comprobanteFiscalImpresion.obtenerHashMap());
 
-        generarReporte(nombreJRXML, nombreArchivoSalida, params);
+        return generarReporte(nombreJRXML, nombreArchivoSalida, params);
     }
 
     /**
      * Retorna lo datos estáticos (información de la empresa) de la cabecera del comprobante.
+     *
      * @return
      */
     private static HashMap<String, Object> getDatosEstaticosDelComprobante() {
         HashMap<String, Object> datosEstaticosComprobante = new HashMap<>();
-
         GestorDeConfiguracion gestorConfiguracion = GestorDeConfiguracion.getInstance();
-
         datosEstaticosComprobante.put("empresaNombre", gestorConfiguracion.getProperty("empresaNombre"));
         datosEstaticosComprobante.put("empresaDatos1", gestorConfiguracion.getProperty("empresaDatos1"));
         datosEstaticosComprobante.put("empresaDatos2", gestorConfiguracion.getProperty("empresaDatos2"));
@@ -113,7 +107,6 @@ public class GeneradorPdf {
         datosEstaticosComprobante.put("empresaInicioActividad", gestorConfiguracion.getProperty("empresaInicioActividad"));
         datosEstaticosComprobante.put("comprobantePuntoDeVenta", Formateador.leftPadWithCeros(gestorConfiguracion.getProperty("puntoDeVenta"), 4));
         datosEstaticosComprobante.put("comprobanteLogoPath", gestorConfiguracion.getAbsolutePathConfigurationDir() + "comprobanteLogo.jpg");
-
         return datosEstaticosComprobante;
     }
 
