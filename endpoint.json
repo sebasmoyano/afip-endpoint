@@ -39,16 +39,103 @@
     ],
     "configuration":[
         {
-            "name": "token",
-            "label": "Token",
-            "description": "Sample token used on endpoint",
+            "name": "empresaNombre",
+            "label": "Nombre empresa",
             "type": "text",
             "required": true
         },
         {
-            "name": "webhook",
-            "label": "Web Services URL",
-            "type": "webhookUrl"
+            "name": "empresaCuit",
+            "label": "CUIT",
+            "type": "text",
+            "required": true
+        },
+        {
+            "name": "puntoVenta",
+            "label": "Punto de Venta",
+            "type": "text",
+            "required": true
+        },
+        {
+            "name": "empresaDireccion",
+            "label": "Dirección",
+            "type": "text"
+        },
+        {
+            "name": "empresaTelefono",
+            "label": "Teléfono",
+            "type": "text"
+        },
+        {
+            "name": "empresaEmail",
+            "label": "Email",
+            "type": "text"
+        },
+        {
+            "name": "empresaSitioWeb",
+            "label": "Sitio web",
+            "type": "text"
+        },
+        {
+            "name": "empresaTipoContribuyente",
+            "label": "Tipo contribuyente",
+            "type": "text"
+        },
+        {
+            "name": "empresaIngresosBrutos",
+            "label": "Ingresos brutos",
+            "type": "text"
+        },
+        {
+            "name": "empresaEstablecimiento",
+            "label": "Establecimiento",
+            "type": "text"
+        },
+        {
+            "name": "empresaInicioActividad",
+            "label": "Inicio actividades",
+            "type": "text"
+        },
+        {
+            "name": "empresaSede",
+            "label": "Inicio actividades",
+            "type": "text"
+        },
+        {
+            "name": "endpointAutenticacion",
+            "label": "Endpoint autenticación",
+            "type": "text",
+            "required": true
+        },
+        {
+            "name": "endpointFacturacion",
+            "label": "Endpoint facturaction",
+            "type": "text",
+            "required": true
+        },
+        {
+            "name": "endpointFacturacion",
+            "label": "Endpoint facturaction",
+            "type": "text",
+            "required": true
+        },
+        {
+            "name": "destinoServicio",
+            "label": "Destino servicio",
+            "type": "text",
+            "required": true
+        },
+        {
+            "name": "clavePrivada",
+            "label": "Clave privada",
+            "type": "text",
+            "required": true
+        },
+        {
+            "name": "certificado",
+            "label": "Certificado",
+            "type": "text",
+            "required": true
         }
     ]
 }
