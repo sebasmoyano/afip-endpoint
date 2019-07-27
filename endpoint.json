@@ -98,18 +98,12 @@
         },
         {
             "name": "empresaSede",
-            "label": "Inicio actividades",
+            "label": "Sede",
             "type": "text"
         },
         {
             "name": "endpointAutenticacion",
             "label": "Endpoint autenticación",
-            "type": "text",
-            "required": true
-        },
-        {
-            "name": "endpointFacturacion",
-            "label": "Endpoint facturaction",
             "type": "text",
             "required": true
         },
