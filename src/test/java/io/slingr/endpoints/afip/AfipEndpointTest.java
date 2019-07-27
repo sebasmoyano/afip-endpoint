@@ -36,12 +36,12 @@ public class AfipEndpointTest {
         req.set("tipoDocumento", 80);
         req.set("numeroDocumento", "27065567275");
         req.set("fecha", "20190723"); // yyyyMMdd
-        req.set("total", 121.00);
-        req.set("totalNeto", 100);
-        req.set("impuestos", 21);
+        req.set("total", 157.3);
+        req.set("totalNeto", 130);
+        req.set("iva", 27.3);
 
         // test request
-        Json res = test.executeFunction("autorizarComprobante", req);
+        Json res = test.executeFunction("_autorizarComprobante", req);
         logger.info("Autorizacion response: " + res.toString());
     }
 
@@ -79,7 +79,7 @@ public class AfipEndpointTest {
         factura.set("items", items);
 
         // test request
-        Json res = test.executeFunction("imprimirComprobante", factura);
+        Json res = test.executeFunction("_imprimirComprobante", factura);
         logger.info("Imprimir comprobante response: " + res.toString());
     }
 

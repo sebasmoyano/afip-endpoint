@@ -25,12 +25,12 @@
     "functions": [
         {
             "label": "Autorizar comprobante",
-            "name": "autorizarComprobante",
+            "name": "_autorizarComprobante",
             "description": "Solicita un nuevo codigo autorizacion a AFIP"
         },
         {
             "label": "Imprimir comprobante",
-            "name": "imprimirComprobante",
+            "name": "_imprimirComprobante",
             "description": "Exporta a PDF un comprobante determinado"
         }
     ],

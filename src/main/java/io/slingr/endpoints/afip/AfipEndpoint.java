@@ -25,8 +25,9 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
 
-@SlingrEndpoint(name = "afip")
+@SlingrEndpoint(name = "afip", functionPrefix = "_")
 public class AfipEndpoint extends Endpoint {
 
     private static final Logger logger = LoggerFactory.getLogger(AfipEndpoint.class);
@@ -48,6 +49,10 @@ public class AfipEndpoint extends Endpoint {
     @Override
     public void endpointStarted() {
         logger.info("Endpoint is started");
+
+        // set timezone
+
+        TimeZone.setDefault(TimeZone.getTimeZone("America/Argentina/Buenos_Aires"));
 
         // inicializar propiedades
         GestorDeConfiguracion.getInstance().setProperty("empresaNombre", configuration.string("empresaNombre"));
@@ -91,21 +96,21 @@ public class AfipEndpoint extends Endpoint {
      * ID: 7 - Nota de Débito B
      * ID: 8 - Nota de Crédito B
      */
-    @EndpointFunction(name = "autorizarComprobante")
+    @EndpointFunction(name = "_autorizarComprobante")
     public Json autorizarComprobante(Json params) {
         if (params == null) {
             params = Json.map();
         }
 
-        appLogger.info("Solicitud autorizacion de comprobante [%s]", params);
+        appLogger.info(String.format("Solicitud autorizacion de comprobante [%s]", params));
 
         int tipoComprobante = params.integer("tipoComprobante");
         FECAEDetRequest pedidoAutorizacion = generarPedidoAutorizacion(params);
         CAEResult caeResult = gafip.solicitarCAE(tipoComprobante, pedidoAutorizacion);
 
         Json res = Json.map();
-        res.set("numeroComprobante", caeResult.getComprobanteNumero());
-        res.set("numeroCae", caeResult.getCaeNumero());
+        res.set("numeroComprobante", caeResult.getComprobanteNumero() + "");
+        res.set("numeroCae", caeResult.getCaeNumero() + "");
         if (caeResult.getCaeFechaVencimiento() != null) {
             res.set("vencimientoCae", new SimpleDateFormat("dd/MM/yyyy").format(caeResult.getCaeFechaVencimiento()));
         }
@@ -113,12 +118,12 @@ public class AfipEndpoint extends Endpoint {
             res.set("observacionesCae", caeResult.getCaeObservaciones());
         }
 
-        appLogger.info("Nueva autorización obtenida [%s]", res);
+        appLogger.info(String.format("Nueva autorización obtenida [%s]", res));
 
         return res;
     }
 
-    @EndpointFunction(name = "imprimirComprobante")
+    @EndpointFunction(name = "_imprimirComprobante")
     public Json imprimirComprobante(Json comprobanteJson) {
         appLogger.info("Solicitud exportar comprobante a PDF [%s]", comprobanteJson);
 
@@ -128,8 +133,7 @@ public class AfipEndpoint extends Endpoint {
         InputStream is = null;
         try {
             is = new FileInputStream(comprobantePath);
-            Json comprobanteFileJson = files().upload("factura-" + comprobanteJson.string("numero"), is, "application/pdf");
-            return comprobanteFileJson;
+            return files().upload("Comprobante_" + comprobanteJson.string("numero") + ".pdf", is, "application/pdf");
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -155,7 +159,7 @@ public class AfipEndpoint extends Endpoint {
         // Importe exento
         compDetRequest.setImpOpEx(0);
         // Importe IVA
-        compDetRequest.setImpIVA(payload.decimal("impuestos"));
+        compDetRequest.setImpIVA(payload.decimal("iva"));
         //Suma de los importes del array de tributos
         compDetRequest.setImpTrib(0);
         // Moneda
@@ -164,22 +168,22 @@ public class AfipEndpoint extends Endpoint {
         //Si tiene IVA, seteamos la alicuota IVA
         ArrayOfAlicIva alicIvaArreglo = new ArrayOfAlicIva();
         AlicIva alicIva = new AlicIva();
-        alicIva.setImporte(payload.decimal("impuestos"));
+        alicIva.setImporte(payload.decimal("iva"));
         alicIva.setId(5); // ID: 5 - 21%
-        alicIva.setBaseImp(100);
+        alicIva.setBaseImp(payload.decimal("totalNeto"));
         alicIvaArreglo.getAlicIva().add(alicIva);
         compDetRequest.setIva(alicIvaArreglo);
         return compDetRequest;
     }
 
     private ComprobanteFiscalImpresion generarComprobanteImpresion(Json comprobanteJson) {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
         ComprobanteFiscalImpresion cfi = new ComprobanteFiscalImpresion();
         cfi.setComprobanteLetra(comprobanteJson.string("tipo"));
         cfi.setComprobanteCodigo(comprobanteJson.string("codigo")); // ID: 1 - Factura A ID: 2 - Nota de Débito A ID: 3 - Nota de Crédito A ID: 6 - Factura B ID: 7 - Nota de Débito B ID: 8 - Nota de Crédito B
         cfi.setComprobanteNumero(comprobanteJson.string("numero"));
         cfi.setComprobanteTipo(comprobanteJson.string("tipoLabel")); // Como aparecerá en el pdf
         try {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
             cfi.setComprobanteFecha(sdf.parse(comprobanteJson.string("fecha"))); // Fecha del comprobante
         } catch (ParseException e) {
             logger.warn("No se pudo parsear fecha", e);
@@ -189,6 +193,7 @@ public class AfipEndpoint extends Endpoint {
         cfi.setCaeNumero(Long.parseLong(comprobanteJson.string("cae")));
         cfi.setCaeFechaVencimiento(new Date());
         try {
+            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
             cfi.setCaeFechaVencimiento(sdf.parse(comprobanteJson.string("caeVencimiento"))); // Fecha del comprobante
         } catch (ParseException e) {
             logger.warn("No se pudo parsear fecha", e);
