@@ -77,7 +77,8 @@ public class AfipEndpoint extends Endpoint {
         // if the user puts the private key with \n we need to convert it accordingly
         String clavePrivada = configuration.string("clavePrivada").replaceAll("\\\\n", "\n");
         GestorDeConfiguracion.getInstance().setProperty("cadenaClavePrivada", clavePrivada);
-        GestorDeConfiguracion.getInstance().setProperty("cadenaCertificadoCrt", configuration.string("certificado"));
+        String certificado = configuration.string("certificado").replaceAll("\\\\n", "\n");
+        GestorDeConfiguracion.getInstance().setProperty("cadenaCertificadoCrt", certificado);
 
         gafip = new GestorAFIP();
         gafip.inicializar(configStore);
