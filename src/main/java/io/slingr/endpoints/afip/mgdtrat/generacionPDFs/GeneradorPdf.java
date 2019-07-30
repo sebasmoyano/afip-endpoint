@@ -31,9 +31,7 @@ public class GeneradorPdf {
         String tempDir = System.getProperty("java.io.tmpdir");
         String pathRArchivoSalida = tempDir + "/" + nombreArchivoSalida; // Path relativo al archivo
         try {
-            ClassLoader cl = Thread.currentThread().getContextClassLoader();
-            System.out.println("Nombre reporte: " + nombreJRXML);
-            InputStream pathRFileJRXML = cl.getResource("comprobantesPlantillas/" + nombreJRXML).openStream();
+            InputStream pathRFileJRXML = GeneradorPdf.class.getResource("/comprobantesPlantillas/" + nombreJRXML).openStream();
 
             JasperDesign design = JRXmlLoader.load(pathRFileJRXML);
             JasperReport report = JasperCompileManager.compileReport(design);
@@ -74,8 +72,7 @@ public class GeneradorPdf {
         String nombreJRXML = "comprobanteFiscalTemplate.jrxml";
         String nombreArchivoSalida = (comprobanteFiscalImpresion.getComprobanteTipo()).replace(' ', '_') + "-" + comprobanteFiscalImpresion.getComprobanteLetra() + "-" + comprobanteFiscalImpresion.getComprobanteNumero() + ".pdf";
 
-        ClassLoader cl = Thread.currentThread().getContextClassLoader();
-        URL urlSubreportDir = cl.getResource("comprobantesPlantillas/");
+        URL urlSubreportDir = GeneradorPdf.class.getResource("/comprobantesPlantillas/");
 
         HashMap<String, Object> params = new HashMap<>();
         params.put("SUBREPORT_DIR", urlSubreportDir.getPath());
