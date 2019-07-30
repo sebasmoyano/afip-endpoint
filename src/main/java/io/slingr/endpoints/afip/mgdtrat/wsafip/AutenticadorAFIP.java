@@ -8,6 +8,7 @@ import org.apache.axis.client.Call;
 import org.apache.axis.client.Service;
 import org.apache.axis.encoding.Base64;
 import org.apache.axis.encoding.XMLType;
+import org.apache.commons.lang.StringUtils;
 import org.bouncycastle.cert.jcajce.JcaCertStore;
 import org.bouncycastle.cms.CMSProcessableByteArray;
 import org.bouncycastle.cms.CMSSignedData;
@@ -66,7 +67,7 @@ public class AutenticadorAFIP {
             String sign = this.gestorPropiedades.getProperty("sign");
             String expiracionTRA = this.gestorPropiedades.getProperty("expiracionTRA");
 
-            if (token == null || token.isEmpty() || sign == null || sign.isEmpty()) {
+            if (StringUtils.isEmpty(token) || StringUtils.isEmpty(sign)) {
                 // retrieve it from data store
                 Json storedConfig = configStore.findOne(Json.map());
                 if (storedConfig != null) {
@@ -78,7 +79,7 @@ public class AutenticadorAFIP {
             }
             this.taAFIP.setToken(token);
             this.taAFIP.setSign(sign);
-            if (expiracionTRA != null) {
+            if (!StringUtils.isEmpty(expiracionTRA)) {
                 this.taAFIP.setExpiracionTA(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.S").parse(expiracionTRA));
             }
         } catch (Exception e) {
