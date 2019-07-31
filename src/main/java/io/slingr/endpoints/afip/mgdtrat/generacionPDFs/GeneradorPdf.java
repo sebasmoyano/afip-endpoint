@@ -36,11 +36,10 @@ public class GeneradorPdf {
      * @param nombreArchivoSalida
      * @return void
      * */
-    private static void generarReporte(String nombreJRXML, String nombreArchivoSalida, HashMap<String, Object> params) {
+    private static String generarReporte(String nombreJRXML, String nombreArchivoSalida, HashMap<String, Object> params) {
+        String tempDir = System.getProperty("java.io.tmpdir");
+        String pathRArchivoSalida = tempDir + "/" + nombreArchivoSalida; //Path relativo al archivo
         try {
-            String tempDir = System.getProperty("java.io.tmpdir");
-            String pathRArchivoSalida = tempDir + "/" + nombreArchivoSalida; //Path relativo al archivo
-
             InputStream pathRFileJRXML = GeneradorPdf.class.getResource("/comprobantesPlantillas/" + nombreJRXML).openStream();
 
             JasperDesign design = JRXmlLoader.load(pathRFileJRXML);
@@ -79,9 +78,10 @@ public class GeneradorPdf {
         } catch(JRException jre) {
             throw new RuntimeException(jre);
         }
+        return pathRArchivoSalida;
     }
 
-    public static void impresionComprobanteFiscal(ComprobanteFiscalImpresion comprobanteFiscalImpresion) {
+    public static String impresionComprobanteFiscal(ComprobanteFiscalImpresion comprobanteFiscalImpresion) {
         String nombreJRXML = "comprobanteFiscalTemplate.jrxml";
         String nombreArchivoSalida = (comprobanteFiscalImpresion.getComprobanteTipo()).replace(' ', '_') + "-" + comprobanteFiscalImpresion.getComprobanteLetra() + "-" + comprobanteFiscalImpresion.getComprobanteNumero() + ".pdf";
 
@@ -93,7 +93,7 @@ public class GeneradorPdf {
         params.putAll(GeneradorPdf.getDatosEstaticosDelComprobante());
         params.putAll(comprobanteFiscalImpresion.obtenerHashMap());
 
-        generarReporte(nombreJRXML, nombreArchivoSalida, params);
+        return generarReporte(nombreJRXML, nombreArchivoSalida, params);
     }
 
     /**
