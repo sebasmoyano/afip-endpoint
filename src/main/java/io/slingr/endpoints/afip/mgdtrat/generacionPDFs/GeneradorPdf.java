@@ -72,10 +72,10 @@ public class GeneradorPdf {
         String nombreJRXML = "comprobanteFiscalTemplate.jrxml";
         String nombreArchivoSalida = (comprobanteFiscalImpresion.getComprobanteTipo()).replace(' ', '_') + "-" + comprobanteFiscalImpresion.getComprobanteLetra() + "-" + comprobanteFiscalImpresion.getComprobanteNumero() + ".pdf";
 
-        URL urlSubreportDir = GeneradorPdf.class.getResource("/comprobantesPlantillas/");
+        URL urlSubreporteRenglonesDelComprobante = GeneradorPdf.class.getResource("/comprobantesPlantillas/comprobanteFiscalRenglonesTemplate.jasper");
 
         HashMap<String, Object> params = new HashMap<>();
-        params.put("SUBREPORT_DIR", urlSubreportDir.getPath());
+        params.put("SUBREPORT_DIR", urlSubreporteRenglonesDelComprobante);
         params.put("codigoDeBarrasImagen", GeneradorPdf.generarCodigoDeBarrasComprobante(comprobanteFiscalImpresion.getCodigoDeBarras()));
         params.putAll(GeneradorPdf.getDatosEstaticosDelComprobante());
         params.putAll(comprobanteFiscalImpresion.obtenerHashMap());
