@@ -111,7 +111,7 @@ public class AutenticadorAFIP {
         File fCertificadoP12 = new File(p12file);
         //Si no existe el certificado.p12 lo genero
         if (!fCertificadoP12.exists()) {
-            logger.info("El store no existe... se necesita recrearlo");
+            logger.info(String.format("El store no existe [%s]... se necesita recrearlo", p12file));
             this.generarCertificadoP12();
         }
 
@@ -340,7 +340,7 @@ public class AutenticadorAFIP {
 
         String pathArchivoClavePrivada = this.gestorPropiedades.getAbsolutePathConfigurationDir() + "clavePrivada.key";
         String pathArchivoCertificadoCrt = this.gestorPropiedades.getAbsolutePathConfigurationDir() + "certificado.crt";
-        String pathArchivoCertificadoP12 = this.gestorPropiedades.getAbsolutePathConfigurationDir() + "certificado.p12";
+        String pathArchivoCertificadoP12 = this.gestorPropiedades.getAbsolutePathConfigurationDir() + this.gestorPropiedades.getProperty("keystore");
 
         //Signer y passwrod a utilizar para crear el certificado p12
         String p12Signer = this.gestorPropiedades.getProperty("keystore-signer");
@@ -370,6 +370,7 @@ public class AutenticadorAFIP {
         if (!fClavePrivada.exists()) {
             String cadenaClavePrivada = this.gestorPropiedades.getProperty("cadenaClavePrivada");
             try {
+                logger.info(String.format("Creando archivo de clave privada [%s]", fClavePrivada.getAbsolutePath()));
                 FileUtils.writeStringToFile(fClavePrivada, cadenaClavePrivada, "UTF-8");
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -386,6 +387,7 @@ public class AutenticadorAFIP {
         if (!fCertificadoCrt.exists()) {
             String cadenaCertificadoCrt = this.gestorPropiedades.getProperty("cadenaCertificadoCrt");
             try {
+                logger.info(String.format("Creando archivo de certificado [%s]", fCertificadoCrt.getAbsolutePath()));
                 FileUtils.writeStringToFile(fCertificadoCrt, cadenaCertificadoCrt, "UTF-8");
             } catch (IOException e) {
                 throw new RuntimeException(e);
