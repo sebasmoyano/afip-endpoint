@@ -83,6 +83,40 @@ public class AfipEndpointTest {
         logger.info("Imprimir comprobante response: " + res.toString());
     }
 
+    @Test
+    public void testImprimirPresupuesto() throws Exception {
+        // build request
+        final Json presupuesto = Json.map();
+        presupuesto.set("numero", "1");
+        presupuesto.set("tipoLabel", "Presupuesto");
+        presupuesto.set("fecha", "20190717");
+        presupuesto.set("subtotal", 100.0);
+        presupuesto.set("iva", 0);
+        presupuesto.set("total", 100.0);
+
+        final Json comprador = Json.map();
+        comprador.set("nombre", "Max Power");
+        comprador.set("domicilio", "Chubut 7868, Carrodilla, Mendoza");
+        comprador.set("responsabilidadFrenteAlIva", "Responsable Inscripto");
+        comprador.set("documentoTipo", "CUIT");
+        comprador.set("documentoNumero", "20-30972191-9");
+        presupuesto.set("comprador", comprador);
+
+        Json items = Json.list();
+        Json item = Json.map();
+        item.set("cantidad", 1);
+        item.set("producto", "Mesa cocina");
+        item.set("codigoProducto", "0001");
+        item.set("precio", 100.0);
+        item.set("subtotal", 100.0);
+        items.push(item);
+        presupuesto.set("items", items);
+
+        // test request
+        Json res = test.executeFunction("_imprimirComprobante", presupuesto);
+        logger.info("Imprimir comprobante response: " + res.toString());
+    }
+
 
 
 }

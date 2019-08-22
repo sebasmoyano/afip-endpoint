@@ -36,23 +36,25 @@ public class GeneradorPdf {
             JasperDesign design = JRXmlLoader.load(pathRFileJRXML);
             JasperReport report = JasperCompileManager.compileReport(design);
 
-            //Original
+            // Original
             params.put("tipoCopia", "ORIGINAL");
             JasperPrint print = JasperFillManager.fillReport(report, params);
 
-            //Duplicado
-            params.put("tipoCopia", "DUPLICADO");
-            JasperPrint print2 = JasperFillManager.fillReport(report, params);
+            if (params.get("comprobanteCodigo") != null) {
+                // Duplicado
+                params.put("tipoCopia", "DUPLICADO");
+                JasperPrint print2 = JasperFillManager.fillReport(report, params);
 
-            //Triplicado
-            params.put("tipoCopia", "TRIPLICADO");
-            JasperPrint print3 = JasperFillManager.fillReport(report, params);
+                // Triplicado
+                params.put("tipoCopia", "TRIPLICADO");
+                JasperPrint print3 = JasperFillManager.fillReport(report, params);
 
-            JRPrintPage duplicado = (JRPrintPage) print2.getPages().get(0);
-            JRPrintPage triplicado = (JRPrintPage) print3.getPages().get(0);
+                JRPrintPage duplicado = (JRPrintPage) print2.getPages().get(0);
+                JRPrintPage triplicado = (JRPrintPage) print3.getPages().get(0);
 
-            print.addPage(duplicado);
-            print.addPage(triplicado);
+                print.addPage(duplicado);
+                print.addPage(triplicado);
+            }
 
             //JasperViewer.viewReport(print); //El viewer de jasper report
             OutputStream output = new FileOutputStream(new File(pathRArchivoSalida));
@@ -70,15 +72,21 @@ public class GeneradorPdf {
 
     public static String  impresionComprobanteFiscal(ComprobanteFiscalImpresion comprobanteFiscalImpresion) {
         String nombreJRXML = "comprobanteFiscalTemplate.jrxml";
-        String nombreArchivoSalida = (comprobanteFiscalImpresion.getComprobanteTipo()).replace(' ', '_') + "-" + comprobanteFiscalImpresion.getComprobanteLetra() + "-" + comprobanteFiscalImpresion.getComprobanteNumero() + ".pdf";
+        String nombreArchivoSalida = (comprobanteFiscalImpresion.getComprobanteTipo()).replace(' ', '_');
+        if (comprobanteFiscalImpresion.getComprobanteLetra() != null) {
+            nombreArchivoSalida += "-" + comprobanteFiscalImpresion.getComprobanteLetra();
+        }
+        nombreArchivoSalida +=  "-" + comprobanteFiscalImpresion.getComprobanteNumero() + ".pdf";
 
         URL urlSubreportDir = GeneradorPdf.class.getResource("/comprobantesPlantillas/");
 
         HashMap<String, Object> params = new HashMap<>();
         params.put("SUBREPORT_DIR", urlSubreportDir.getPath());
-        params.put("codigoDeBarrasImagen", GeneradorPdf.generarCodigoDeBarrasComprobante(comprobanteFiscalImpresion.getCodigoDeBarras()));
+        if (comprobanteFiscalImpresion.getCaeFechaVencimiento() != null) {
+            params.put("codigoDeBarrasImagen", GeneradorPdf.generarCodigoDeBarrasComprobante(comprobanteFiscalImpresion.getCodigoDeBarras()));
+        }
         params.putAll(GeneradorPdf.getDatosEstaticosDelComprobante());
-        params.putAll(comprobanteFiscalImpresion.obtenerHashMap());
+        params.putAll(comprobanteFiscalImpresion.toMap());
 
         return generarReporte(nombreJRXML, nombreArchivoSalida, params);
     }

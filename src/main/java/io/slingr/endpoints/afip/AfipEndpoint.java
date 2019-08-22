@@ -161,7 +161,7 @@ public class AfipEndpoint extends Endpoint {
         compDetRequest.setImpOpEx(0);
         // Importe IVA
         compDetRequest.setImpIVA(payload.decimal("iva"));
-        //Suma de los importes del array de tributos
+        // Suma de los importes del array de tributos
         compDetRequest.setImpTrib(0);
         // Moneda
         compDetRequest.setMonId("PES"); // Moneda => ID: PES - Pesos Argentinos
@@ -179,8 +179,12 @@ public class AfipEndpoint extends Endpoint {
 
     private ComprobanteFiscalImpresion generarComprobanteImpresion(Json comprobanteJson) {
         ComprobanteFiscalImpresion cfi = new ComprobanteFiscalImpresion();
-        cfi.setComprobanteLetra(comprobanteJson.string("tipo"));
-        cfi.setComprobanteCodigo(comprobanteJson.string("codigo")); // ID: 1 - Factura A ID: 2 - Nota de Débito A ID: 3 - Nota de Crédito A ID: 6 - Factura B ID: 7 - Nota de Débito B ID: 8 - Nota de Crédito B
+        if (comprobanteJson.contains("tipo")) {
+            cfi.setComprobanteLetra(comprobanteJson.string("tipo"));
+        }
+        if (comprobanteJson.contains("codigo")) {
+            cfi.setComprobanteCodigo(comprobanteJson.string("codigo")); // ID: 1 - Factura A ID: 2 - Nota de Débito A ID: 3 - Nota de Crédito A ID: 6 - Factura B ID: 7 - Nota de Débito B ID: 8 - Nota de Crédito B
+        }
         cfi.setComprobanteNumero(comprobanteJson.string("numero"));
         cfi.setComprobanteTipo(comprobanteJson.string("tipoLabel")); // Como aparecerá en el pdf
         try {
@@ -191,13 +195,17 @@ public class AfipEndpoint extends Endpoint {
         }
         cfi.setCondicionDeVenta(comprobanteJson.string("condicionVenta", "Contado"));
         cfi.setObservaciones("");
-        cfi.setCaeNumero(Long.parseLong(comprobanteJson.string("cae")));
-        cfi.setCaeFechaVencimiento(new Date());
-        try {
-            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
-            cfi.setCaeFechaVencimiento(sdf.parse(comprobanteJson.string("caeVencimiento"))); // Fecha del comprobante
-        } catch (ParseException e) {
-            logger.warn("No se pudo parsear fecha", e);
+        if (comprobanteJson.contains("cae")) {
+            cfi.setCaeNumero(Long.parseLong(comprobanteJson.string("cae")));
+        }
+        if (comprobanteJson.contains("caeVencimiento")) {
+            cfi.setCaeFechaVencimiento(new Date());
+            try {
+                SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+                cfi.setCaeFechaVencimiento(sdf.parse(comprobanteJson.string("caeVencimiento"))); // Fecha del comprobante
+            } catch (ParseException e) {
+                logger.warn("No se pudo parsear fecha", e);
+            }
         }
         cfi.setDescuento(comprobanteJson.decimal("totalDescuento", 0.0)); // El total en pesos que se bonifica en el comprobante.
         cfi.setSubtotal(comprobanteJson.decimal("subtotal"));

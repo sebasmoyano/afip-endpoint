@@ -52,6 +52,8 @@ public class ComprobanteFiscalImpresion {
     //La cantidad máxima de renglones es 15
     private List<ComprobanteFiscalRenglon> renglones = new ArrayList<ComprobanteFiscalRenglon>();
 
+    private final static SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("dd/MM/yyyy");
+
     /**
      * @return the comprobanteLetra
      */
@@ -290,19 +292,18 @@ public class ComprobanteFiscalImpresion {
      * @return the codigoDeBarras
      */
     public String getCodigoDeBarras() {
-        String codigoDeBarrasRetorno;
-
+        String codigoDeBarrasRetorno = null;
         if(codigoDeBarras != null && ! codigoDeBarras.isEmpty()) {
             codigoDeBarrasRetorno = codigoDeBarras;
         } else {
             String cuitEmpresa = GestorDeConfiguracion.getInstance().getProperty("CUIT");
             String puntoDeVenta = Formateador.leftPadWithCeros(GestorDeConfiguracion.getInstance().getProperty("puntoDeVenta"), 4);
             DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
-            String fechaVencimientoCae = dateFormat.format(this.getCaeFechaVencimiento());
-
-            codigoDeBarrasRetorno = cuitEmpresa + this.getComprobanteCodigo() + puntoDeVenta + this.getCaeNumero() + fechaVencimientoCae;
+            if (this.getCaeFechaVencimiento() != null) {
+                String fechaVencimientoCae = dateFormat.format(this.getCaeFechaVencimiento());
+                codigoDeBarrasRetorno = cuitEmpresa + this.getComprobanteCodigo() + puntoDeVenta + this.getCaeNumero() + fechaVencimientoCae;
+            }
         }
-
         return codigoDeBarrasRetorno;
     }
 
@@ -334,11 +335,15 @@ public class ComprobanteFiscalImpresion {
      * y generar el pdf.
      * @return
      */
-    public HashMap<String, Object> obtenerHashMap() {
+    public HashMap<String, Object> toMap() {
         HashMap<String, Object> datosComprobante = new HashMap<>();
 
-        datosComprobante.put("comprobanteLetra", this.getComprobanteLetra());
-        datosComprobante.put("comprobanteCodigo", this.getComprobanteCodigo());
+        if (this.getComprobanteLetra() != null) {
+            datosComprobante.put("comprobanteLetra", this.getComprobanteLetra());
+        }
+        if (this.getComprobanteCodigo() != null) {
+            datosComprobante.put("comprobanteCodigo", this.getComprobanteCodigo());
+        }
         datosComprobante.put("comprobanteNumero", this.getComprobanteNumero());
         datosComprobante.put("comprobanteTipo", this.getComprobanteTipo());
         datosComprobante.put("comprobanteFecha", this.getComprobanteFecha());
@@ -352,8 +357,12 @@ public class ComprobanteFiscalImpresion {
 
         datosComprobante.put("condicionDeVenta", this.getCondicionDeVenta());
         datosComprobante.put("observaciones", this.getObservaciones());
-        datosComprobante.put("caeNumero", this.getCaeNumero());
-        datosComprobante.put("caeFechaVencimiento", this.getCaeFechaVencimiento());
+        if (this.getCaeNumero() != null) {
+            datosComprobante.put("caeNumero", "CAE: " + this.getCaeNumero());
+        }
+        if (this.getCaeFechaVencimiento() != null) {
+           datosComprobante.put("caeFechaVencimiento", "Vto. CAE: " + DATE_FORMAT.format(this.getCaeFechaVencimiento()));
+        }
         datosComprobante.put("caeObservaciones", this.getCaeObservaciones());
         datosComprobante.put("descuento", this.getDescuento());
         datosComprobante.put("subtotal", this.getSubtotal());
