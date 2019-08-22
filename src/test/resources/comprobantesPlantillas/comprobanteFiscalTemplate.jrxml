@@ -66,6 +66,7 @@
 	<parameter name="descuento" isForPrompting="false" class="java.lang.Double"/>
 	<parameter name="comprobanteLogoPath" isForPrompting="false" class="java.lang.String"/>
 	<parameter name="clienteDocumentoTipo" isForPrompting="false" class="java.lang.String"/>
+	<parameter name="urlSubreporteRenglonesDelComprobante" isForPrompting="false" class="java.lang.Object"/>
 
 	<background>
 		<band height="0"  isSplitAllowed="true" >
@@ -627,7 +628,7 @@
 						height="320"
 						key="subreport-1"/>
 				<dataSourceExpression><![CDATA[new net.sf.jasperreports.engine.data.JRBeanCollectionDataSource($P{comprobanteRenglones})]]></dataSourceExpression>
-				<subreportExpression  class="java.lang.String"><![CDATA[$P{SUBREPORT_DIR} + "comprobanteFiscalRenglonesTemplate.jasper"]]></subreportExpression>
+				<subreportExpression  class="java.net.URL"><![CDATA[$P{urlSubreporteRenglonesDelComprobante}]]></subreportExpression>
 			</subreport>
 			<textField isStretchWithOverflow="false" isBlankWhenNull="true" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
 				<reportElement

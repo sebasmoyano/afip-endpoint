@@ -8,6 +8,7 @@ import org.apache.axis.client.Call;
 import org.apache.axis.client.Service;
 import org.apache.axis.encoding.Base64;
 import org.apache.axis.encoding.XMLType;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.bouncycastle.cert.jcajce.JcaCertStore;
 import org.bouncycastle.cms.CMSProcessableByteArray;
@@ -28,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import javax.xml.bind.DatatypeConverter;
 import javax.xml.rpc.ParameterMode;
 import java.io.*;
+import java.nio.charset.Charset;
 import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.Security;
@@ -89,24 +91,27 @@ public class AutenticadorAFIP {
 
     public TicketAccesoAFIP inicializar() {
         if (!this.taAFIP.estaActivoTAAFIP()) {
+            logger.info("Token no esta activo... Se requiere re-autenticar");
             this.autenticacionYAutorizacion();
         }
         return this.taAFIP;
     }
 
     private void autenticacionYAutorizacion() {
-        String loginTicketResponse = null;
+        logger.info("Autenticando...");
 
+        String loginTicketResponse = null;
         String endpoint = this.gestorPropiedades.getProperty("endpointAutenticacion");
         String service = this.gestorPropiedades.getProperty("service");
         String dstDN = this.gestorPropiedades.getProperty("dstdn");
-        String p12file = this.gestorPropiedades.getAbsolutePathConfigurationDir() + this.gestorPropiedades.getProperty("keystore");
+        String p12file = this.gestorPropiedades.getAbsolutePathConfigurationDir() +  "certificado.p12";
         String signer = this.gestorPropiedades.getProperty("keystore-signer");
         String p12pass = this.gestorPropiedades.getProperty("keystore-password");
 
         File fCertificadoP12 = new File(p12file);
         //Si no existe el certificado.p12 lo genero
         if (!fCertificadoP12.exists()) {
+            logger.info(String.format("El store no existe [%s]... se necesita recrearlo", p12file));
             this.generarCertificadoP12();
         }
 
@@ -341,19 +346,18 @@ public class AutenticadorAFIP {
         String p12Signer = this.gestorPropiedades.getProperty("keystore-signer");
         String p12Password = this.gestorPropiedades.getProperty("keystore-password");
 
-        //Genero el certificado p12
+        // Genero el certificado p12
         String command = "openssl pkcs12 -export -inkey " + pathArchivoClavePrivada + " -in " + pathArchivoCertificadoCrt + " -out " + pathArchivoCertificadoP12 + " -name " + p12Signer + " -password pass:" + p12Password;
         Runtime r = Runtime.getRuntime();
         try {
-            r.exec(command, null, new File(this.gestorPropiedades.getAbsolutePathConfigurationDir()));
-        } catch (IOException ioe) {
-            throw new RuntimeException(ioe);
-        }
-        // wait a bit until
-        try {
-            Thread.sleep(2 * 100);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+            Process process = r.exec(command, null, new File(this.gestorPropiedades.getAbsolutePathConfigurationDir()));
+            // El thread actual espera a que termine la ejecución del comando (subproceso) para continuar.
+            int exitVal = process.waitFor();
+            if (exitVal != 0) {
+                throw new RuntimeException("No se pudo generar el certificado.p12 requerido para solicitar el TA a AFIP.");
+            }
+        } catch (IOException | InterruptedException ex) {
+            throw new RuntimeException(ex);
         }
     }
 
@@ -362,15 +366,13 @@ public class AutenticadorAFIP {
      * archivo de configuración.
      */
     private void crearArchivoClavePrivada() {
-        String cadenaClavePrivada = this.gestorPropiedades.getProperty("cadenaClavePrivada");
         File fClavePrivada = new File(this.gestorPropiedades.getAbsolutePathConfigurationDir() + "clavePrivada.key");
-
         if (!fClavePrivada.exists()) {
-            try (OutputStream fosClavePrivada = new FileOutputStream(fClavePrivada)) {
+            logger.info(String.format("Creando archivo de clave privada [%s]", fClavePrivada.getAbsolutePath()));
+            String cadenaClavePrivada = this.gestorPropiedades.getProperty("cadenaClavePrivada");
+            try(OutputStream fosClavePrivada = new FileOutputStream(fClavePrivada)) {
                 fClavePrivada.createNewFile();
-
                 byte[] contentInBytes = cadenaClavePrivada.getBytes();
-
                 fosClavePrivada.write(contentInBytes);
                 fosClavePrivada.flush();
             } catch (FileNotFoundException fnfe) {
@@ -386,18 +388,15 @@ public class AutenticadorAFIP {
      * archivo de configuración.
      */
     private void crearArchivoCertificadoCrt() {
-        String cadenaCertificadoCrt = this.gestorPropiedades.getProperty("cadenaCertificadoCrt");
         File fCertificadoCrt = new File(this.gestorPropiedades.getAbsolutePathConfigurationDir() + "certificado.crt");
-
         if (!fCertificadoCrt.exists()) {
-            try (OutputStream fosCertificadoCrt = new FileOutputStream(fCertificadoCrt)) {
+            logger.info(String.format("Creando archivo de certificado [%s]", fCertificadoCrt.getAbsolutePath()));
+            String cadenaCertificadoCrt = this.gestorPropiedades.getProperty("cadenaCertificadoCrt");
+            try(OutputStream fosCertificadoCrt = new FileOutputStream(fCertificadoCrt)) {
                 fCertificadoCrt.createNewFile();
-
                 byte[] contentInBytes = cadenaCertificadoCrt.getBytes();
-
                 fosCertificadoCrt.write(contentInBytes);
                 fosCertificadoCrt.flush();
-
             } catch (FileNotFoundException fnfe) {
                 throw new RuntimeException(fnfe);
             } catch (IOException ioe) {

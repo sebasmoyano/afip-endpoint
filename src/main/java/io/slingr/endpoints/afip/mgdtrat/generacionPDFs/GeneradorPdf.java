@@ -18,9 +18,12 @@ import java.net.URL;
 import java.util.HashMap;
 
 /**
+ *
  * @author itraverso
  */
 public class GeneradorPdf {
+
+    private final static String NOMBRE_ARCHIVO_LOGO_COMPROBANTE =  "comprobanteLogo.jpg";
 
     /*
      * @Param nombreJRXML String
@@ -29,7 +32,7 @@ public class GeneradorPdf {
      * */
     private static String generarReporte(String nombreJRXML, String nombreArchivoSalida, HashMap<String, Object> params) {
         String tempDir = System.getProperty("java.io.tmpdir");
-        String pathRArchivoSalida = tempDir + "/" + nombreArchivoSalida; // Path relativo al archivo
+        String pathRArchivoSalida = tempDir + "/" + nombreArchivoSalida; //Path relativo al archivo
         try {
             InputStream pathRFileJRXML = GeneradorPdf.class.getResource("/comprobantesPlantillas/" + nombreJRXML).openStream();
 
@@ -57,20 +60,24 @@ public class GeneradorPdf {
             }
 
             //JasperViewer.viewReport(print); //El viewer de jasper report
+
             OutputStream output = new FileOutputStream(new File(pathRArchivoSalida));
+
             JasperExportManager.exportReportToPdfStream(print, output);
+
             output.close();
-        } catch (FileNotFoundException fnfe) {
+
+        } catch(FileNotFoundException fnfe) {
             throw new RuntimeException(fnfe);
-        } catch (IOException ioe) {
+        } catch(IOException ioe) {
             throw new RuntimeException(ioe);
-        } catch (JRException jre) {
+        } catch(JRException jre) {
             throw new RuntimeException(jre);
         }
         return pathRArchivoSalida;
     }
 
-    public static String  impresionComprobanteFiscal(ComprobanteFiscalImpresion comprobanteFiscalImpresion) {
+    public static String impresionComprobanteFiscal(ComprobanteFiscalImpresion comprobanteFiscalImpresion) {
         String nombreJRXML = "comprobanteFiscalTemplate.jrxml";
         String nombreArchivoSalida = (comprobanteFiscalImpresion.getComprobanteTipo()).replace(' ', '_');
         if (comprobanteFiscalImpresion.getComprobanteLetra() != null) {
@@ -78,10 +85,10 @@ public class GeneradorPdf {
         }
         nombreArchivoSalida +=  "-" + comprobanteFiscalImpresion.getComprobanteNumero() + ".pdf";
 
-        URL urlSubreportDir = GeneradorPdf.class.getResource("/comprobantesPlantillas/");
+        URL urlSubreporteRenglonesDelComprobante = GeneradorPdf.class.getResource("/comprobantesPlantillas/comprobanteFiscalRenglonesTemplate.jasper");
 
         HashMap<String, Object> params = new HashMap<>();
-        params.put("SUBREPORT_DIR", urlSubreportDir.getPath());
+        params.put("urlSubreporteRenglonesDelComprobante", urlSubreporteRenglonesDelComprobante);
         if (comprobanteFiscalImpresion.getCaeFechaVencimiento() != null) {
             params.put("codigoDeBarrasImagen", GeneradorPdf.generarCodigoDeBarrasComprobante(comprobanteFiscalImpresion.getCodigoDeBarras()));
         }
@@ -150,4 +157,32 @@ public class GeneradorPdf {
 
         return barcodeImage;
     }
+
+    /**
+     * Descarga la imagen (logo) que aparece en el pdf del comprobante fiscal, a partir de la url
+     * que se encuentra en el archivo de configuración. La imagen tiene que ser un archivo jpg.
+     */
+    /*private static void descargarArchivoLogoComprobante() {
+        GestorDeConfiguracion gestorConfiguracion = GestorDeConfiguracion.getInstance();
+
+        File archivoLogoComrprobante = new File(gestorConfiguracion.getAbsolutePathConfigurationDir() + NOMBRE_ARCHIVO_LOGO_COMPROBANTE);
+
+        if(! archivoLogoComrprobante.exists()) {
+            BufferedImage image = null;
+
+            try {
+                String urlLgoComprobante = gestorConfiguracion.getProperty("urlLgoComprobante");
+
+                URL url = new URL(urlLgoComprobante);
+
+                image = ImageIO.read(url);
+
+                ImageIO.write(image, "jpg", archivoLogoComrprobante);
+
+            }catch(IOException ioe){
+                throw new RuntimeException(ioe);
+            }
+        }
+    }*/
 }
+
