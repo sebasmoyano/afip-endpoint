@@ -105,9 +105,15 @@ public class AfipEndpoint extends Endpoint {
 
         appLogger.info(String.format("Solicitud autorizacion de comprobante [%s]", params));
 
+        Integer puntoVenta = null;
+        if (!params.isEmpty("puntoVenta")) {
+            puntoVenta = params.integer("puntoVenta");
+        } else {
+            puntoVenta = Integer.parseInt(GestorDeConfiguracion.getInstance().getProperty("puntoDeVenta"));
+        }
         int tipoComprobante = params.integer("tipoComprobante");
         FECAEDetRequest pedidoAutorizacion = generarPedidoAutorizacion(params);
-        CAEResult caeResult = gafip.solicitarCAE(tipoComprobante, pedidoAutorizacion);
+        CAEResult caeResult = gafip.solicitarCAE(puntoVenta, tipoComprobante, pedidoAutorizacion);
 
         Json res = Json.map();
         res.set("numeroComprobante", caeResult.getComprobanteNumero() + "");
@@ -129,7 +135,7 @@ public class AfipEndpoint extends Endpoint {
         appLogger.info("Solicitud exportar comprobante a PDF [%s]", comprobanteJson);
 
         ComprobanteFiscalImpresion comprobanteFiscalImpresion = generarComprobanteImpresion(comprobanteJson);
-        String comprobantePath  = GeneradorPdf.impresionComprobanteFiscal(comprobanteFiscalImpresion);
+        String comprobantePath = GeneradorPdf.impresionComprobanteFiscal(comprobanteFiscalImpresion);
 
         InputStream is = null;
         try {
@@ -179,6 +185,11 @@ public class AfipEndpoint extends Endpoint {
 
     private ComprobanteFiscalImpresion generarComprobanteImpresion(Json comprobanteJson) {
         ComprobanteFiscalImpresion cfi = new ComprobanteFiscalImpresion();
+        if (!comprobanteJson.isEmpty("puntoVenta")) {
+            cfi.setPuntoVenta(comprobanteJson.integer("puntoVenta"));
+        } else {
+            cfi.setPuntoVenta(Integer.parseInt(GestorDeConfiguracion.getInstance().getProperty("puntoDeVenta")));
+        }
         if (comprobanteJson.contains("tipo")) {
             cfi.setComprobanteLetra(comprobanteJson.string("tipo"));
         }

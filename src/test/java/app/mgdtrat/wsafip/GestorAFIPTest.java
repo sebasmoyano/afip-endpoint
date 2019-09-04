@@ -70,9 +70,9 @@ public class GestorAFIPTest {
             ID: 7 - Nota de Débito B
             ID: 8 - Nota de Crédito B
         */
+        int puntoVenta = 1;
         int tipoDeComprobante = 1; //1: Factura A
-
-        CAEResult caeResult = this.gafip.solicitarCAE(tipoDeComprobante, this.setearComprobanteParaTestear(tipoDeComprobante));
+        CAEResult caeResult = this.gafip.solicitarCAE(puntoVenta, tipoDeComprobante, this.setearComprobanteParaTestear(tipoDeComprobante));
 
         System.out.println("--------CAE OBTENIDO--------");
         System.out.println("Número de CAE: " + caeResult.getCaeNumero());
@@ -215,7 +215,6 @@ public class GestorAFIPTest {
     public void testConsultarRespositorios() {
         //Prueba de acceso a distinto métodos (repositorios) del WS de AFIP
         System.out.println("ULTIMO COMPROBANTE AUTORIZADO (FACTURA A): " + gafip.getNumeroUltimoComprobanteAutorizado(1, 1));
-        System.out.println("PUNTO DE VENTA DE PRUEBAS MIO: " + gafip.getPuntoDeVenta());
 
         //gafip.getTablaPuntosDeVenta();
         this.gafip.getTablaTiposCbte();

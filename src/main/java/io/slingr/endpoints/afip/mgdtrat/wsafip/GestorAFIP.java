@@ -253,24 +253,24 @@ public class GestorAFIP {
      * @param pedidoAutorizacion
      * @return // Si hay observaciones las retornamos.
      */
-    public CAEResult solicitarCAE(int tipoComprobante, FECAEDetRequest pedidoAutorizacion) {
+    public CAEResult solicitarCAE(Integer puntoVenta, int tipoComprobante, FECAEDetRequest pedidoAutorizacion) {
         CAEResult caeResult = new CAEResult();
         FECAERequest compRequest = new FECAERequest();
         FECAECabRequest compCabRequest = new FECAECabRequest();
         ArrayOfFECAEDetRequest compDetRequestArray = new ArrayOfFECAEDetRequest();
 
-        //Seteamos el número de comprobante - CbteDesde igual a CbteHasta => pedido individual
+        // Seteamos el número de comprobante - CbteDesde igual a CbteHasta => pedido individual
         if (pedidoAutorizacion.getCbteDesde() <= 0l) {
-            long ultimoNumeroComprobante = this.getNumeroUltimoComprobanteAutorizado(Integer.parseInt(this.gestorConfig.getProperty("puntoDeVenta")), tipoComprobante);
+            long ultimoNumeroComprobante = this.getNumeroUltimoComprobanteAutorizado(puntoVenta, tipoComprobante);
             long proximoNumeroComprobante = ultimoNumeroComprobante + 1;
 
             pedidoAutorizacion.setCbteDesde(proximoNumeroComprobante);
             pedidoAutorizacion.setCbteHasta(proximoNumeroComprobante);
         }
 
-        //Datos de la cabera de la solicitud
+        // Datos de la cabera de la solicitud
         compCabRequest.setCbteTipo(tipoComprobante);
-        compCabRequest.setPtoVta(this.getPuntoDeVenta());
+        compCabRequest.setPtoVta(puntoVenta);
         compCabRequest.setCantReg(1);
 
         //Datos del Detalle de la solicitud (Datos de la cabecera del comprobante)
@@ -280,79 +280,68 @@ public class GestorAFIP {
         compRequest.setFeDetReq(compDetRequestArray);
 
 
-        //Creamos el objeto request (la solicitud)
+        // Creamos el objeto request (la solicitud)
         FECAESolicitar req = new FECAESolicitar();
 
         req.setFeCAEReq(compRequest);
         req.setAuth(this.getObjetoFEAuthRequest());
 
-        //Convertimos el objeto compRequest a un string para armar el request
+        // Convertimos el objeto compRequest a un string para armar el request
         String reqXML = getXMLFromObject(req, FECAESolicitar.class);
 
         Object result = this.ejecutarOperacionWebService(reqXML, FECAESolicitarResponse.class);
 
         FECAESolicitarResponse respuestaCAE = (FECAESolicitarResponse) result;
 
-        //Eventos
+        // Eventos
         String cadenaEventos = this.getCadenaEventos(respuestaCAE.getFECAESolicitarResult().getEvents());
 
-        //Errores
+        // Errores
         ArrayOfErr errores = respuestaCAE.getFECAESolicitarResult().getErrors();
 
         if (errores != null) {
             String cadenaErrores = this.getCadenaErrores(errores);
-
             if (cadenaErrores.contains("10016")) {
-                long ultimoCompAuth = this.getNumeroUltimoComprobanteAutorizado(this.getPuntoDeVenta(), tipoComprobante);
+                long ultimoCompAuth = this.getNumeroUltimoComprobanteAutorizado(puntoVenta, tipoComprobante);
 
                 cadenaErrores += " El ultimo número de comprobante autorizado (con CAE) para este tipo de comprobante fue el " + ultimoCompAuth + ".";
             }
-
             throw new RuntimeException(cadenaErrores + cadenaEventos);
-
         } else {
             FECAECabResponse caeCabResponse = respuestaCAE.getFECAESolicitarResult().getFeCabResp();
             ArrayOfFECAEDetResponse arregloCAEDetResponse = respuestaCAE.getFECAESolicitarResult().getFeDetResp();
 
             FECAEDetResponse caeDetResponse = arregloCAEDetResponse.getFECAEDetResponse().get(0);
 
-            //-----Observaciones
+            // -----Observaciones
             String cadenaObsercaciones = "";
             ArrayOfObs obs = caeDetResponse.getObservaciones();
-
             if (obs != null) {
                 cadenaObsercaciones = this.getCadenaObservaciones(obs);
-
                 if (cadenaObsercaciones.contains("10016")) {
-                    long ultimoCompAuth = this.getNumeroUltimoComprobanteAutorizado(this.getPuntoDeVenta(), tipoComprobante);
-
+                    long ultimoCompAuth = this.getNumeroUltimoComprobanteAutorizado(puntoVenta, tipoComprobante);
                     cadenaObsercaciones += " El ultimo número de comprobante autorizado (con CAE) para este tipo de comprobante fue el " + ultimoCompAuth + ".";
                 }
             }
 
-            //Si está el número de CAE de AFIP lo seteamos al comprobante.
+            // Si está el número de CAE de AFIP lo seteamos al comprobante.
             if (caeDetResponse.getResultado().equals(this.COMPROBANTE_APROBADO) &&
                     caeDetResponse.getCAE() != null && !caeDetResponse.getCAE().equals("")) {
-
                 /*
                 System.out.println("--------CAE OBTENIDO--------");
                 System.out.println("CAE: " + caeDetResponse.getCAE());
                 System.out.println("Vencimiento CAE: " + caeDetResponse.getCAEFchVto());
                 System.out.println("Observacines CAE: " + cadenaObsercaciones);
                 */
-
                 caeResult.setComprobanteNumero(pedidoAutorizacion.getCbteDesde());
                 caeResult.setCaeNumero(Long.parseLong(caeDetResponse.getCAE()));
-
                 try {
                     caeResult.setCaeFechaVencimiento(new SimpleDateFormat("yyyyMMdd").parse(caeDetResponse.getCAEFchVto()));
                 } catch (ParseException pe) {
                     throw new RuntimeException(pe.getMessage());
                 }
-
                 caeResult.setCaeObservaciones(cadenaObsercaciones);
                 caeResult.setCaeEventos(cadenaEventos);
-
             } else {
                 throw new RuntimeException(cadenaEventos + cadenaObsercaciones + " El número de CAE de la AFIP viene vacio.");
             }
@@ -623,13 +612,5 @@ public class GestorAFIP {
         return caeResult;
     }
 
-    /**
-     * Retorna el punto de venta, el cual está seteado en el archivo de
-     * configuración
-     *
-     * @return
-     */
-    public int getPuntoDeVenta() {
-        return Integer.parseInt(this.gestorConfig.getProperty("puntoDeVenta"));
-    }
+
 }

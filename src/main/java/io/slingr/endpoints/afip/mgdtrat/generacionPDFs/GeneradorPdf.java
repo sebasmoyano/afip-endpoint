@@ -23,7 +23,7 @@ import java.util.HashMap;
  */
 public class GeneradorPdf {
 
-    private final static String NOMBRE_ARCHIVO_LOGO_COMPROBANTE =  "comprobanteLogo.jpg";
+    private final static String NOMBRE_ARCHIVO_LOGO_COMPROBANTE = "comprobanteLogo.jpg";
 
     /*
      * @Param nombreJRXML String
@@ -67,11 +67,11 @@ public class GeneradorPdf {
 
             output.close();
 
-        } catch(FileNotFoundException fnfe) {
+        } catch (FileNotFoundException fnfe) {
             throw new RuntimeException(fnfe);
-        } catch(IOException ioe) {
+        } catch (IOException ioe) {
             throw new RuntimeException(ioe);
-        } catch(JRException jre) {
+        } catch (JRException jre) {
             throw new RuntimeException(jre);
         }
         return pathRArchivoSalida;
@@ -83,16 +83,16 @@ public class GeneradorPdf {
         if (comprobanteFiscalImpresion.getComprobanteLetra() != null) {
             nombreArchivoSalida += "-" + comprobanteFiscalImpresion.getComprobanteLetra();
         }
-        nombreArchivoSalida +=  "-" + comprobanteFiscalImpresion.getComprobanteNumero() + ".pdf";
+        nombreArchivoSalida += "-" + comprobanteFiscalImpresion.getComprobanteNumero() + ".pdf";
 
         URL urlSubreporteRenglonesDelComprobante = GeneradorPdf.class.getResource("/comprobantesPlantillas/comprobanteFiscalRenglonesTemplate.jasper");
 
         HashMap<String, Object> params = new HashMap<>();
         params.put("urlSubreporteRenglonesDelComprobante", urlSubreporteRenglonesDelComprobante);
         if (comprobanteFiscalImpresion.getCaeFechaVencimiento() != null) {
-            params.put("codigoDeBarrasImagen", GeneradorPdf.generarCodigoDeBarrasComprobante(comprobanteFiscalImpresion.getCodigoDeBarras()));
+            params.put("codigoDeBarrasImagen", GeneradorPdf.generarCodigoDeBarrasComprobante(comprobanteFiscalImpresion.getCodigoDeBarras(comprobanteFiscalImpresion.getPuntoVenta())));
         }
-        params.putAll(GeneradorPdf.getDatosEstaticosDelComprobante());
+        params.putAll(GeneradorPdf.getDatosEstaticosDelComprobante(comprobanteFiscalImpresion));
         params.putAll(comprobanteFiscalImpresion.toMap());
 
         return generarReporte(nombreJRXML, nombreArchivoSalida, params);
@@ -101,9 +101,10 @@ public class GeneradorPdf {
     /**
      * Retorna lo datos estáticos (información de la empresa) de la cabecera del comprobante.
      *
+     * @param comprobanteFiscalImpresion
      * @return
      */
-    private static HashMap<String, Object> getDatosEstaticosDelComprobante() {
+    private static HashMap<String, Object> getDatosEstaticosDelComprobante(ComprobanteFiscalImpresion comprobanteFiscalImpresion) {
         HashMap<String, Object> datosEstaticosComprobante = new HashMap<>();
         GestorDeConfiguracion gestorConfiguracion = GestorDeConfiguracion.getInstance();
         datosEstaticosComprobante.put("empresaNombre", gestorConfiguracion.getProperty("empresaNombre"));
@@ -117,7 +118,7 @@ public class GeneradorPdf {
         datosEstaticosComprobante.put("empresaEstablecimiento", gestorConfiguracion.getProperty("empresaEstablecimiento"));
         datosEstaticosComprobante.put("empresaSede", gestorConfiguracion.getProperty("empresaSede"));
         datosEstaticosComprobante.put("empresaInicioActividad", gestorConfiguracion.getProperty("empresaInicioActividad"));
-        datosEstaticosComprobante.put("comprobantePuntoDeVenta", Formateador.leftPadWithCeros(gestorConfiguracion.getProperty("puntoDeVenta"), 4));
+        datosEstaticosComprobante.put("comprobantePuntoDeVenta", Formateador.leftPadWithCeros(comprobanteFiscalImpresion.getPuntoVenta(), 4));
         datosEstaticosComprobante.put("comprobanteLogoPath", gestorConfiguracion.getAbsolutePathConfigurationDir() + "comprobanteLogo.jpg");
         return datosEstaticosComprobante;
     }
@@ -185,4 +186,5 @@ public class GeneradorPdf {
         }
     }*/
 }
+
 

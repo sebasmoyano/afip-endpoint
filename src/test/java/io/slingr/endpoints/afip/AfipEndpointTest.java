@@ -1,22 +1,14 @@
 package io.slingr.endpoints.afip;
 
-import io.slingr.endpoints.afip.mgdtrat.generacionPDFs.Comprador;
-import io.slingr.endpoints.afip.mgdtrat.generacionPDFs.ComprobanteFiscalImpresion;
-import io.slingr.endpoints.afip.mgdtrat.generacionPDFs.ComprobanteFiscalRenglon;
 import io.slingr.endpoints.utils.Json;
 import io.slingr.endpoints.utils.tests.EndpointTests;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-
-//@Ignore("For dev proposes")
+@Ignore("For dev proposes")
 public class AfipEndpointTest {
 
     private static final Logger logger = LoggerFactory.getLogger(AfipEndpointTest.class);
@@ -32,6 +24,7 @@ public class AfipEndpointTest {
     public void testAutorizarComprobante() throws Exception {
         // build request
         final Json req = Json.map();
+        req.set("puntoVenta", 1);
         req.set("tipoComprobante", 1);
         req.set("tipoDocumento", 80);
         req.set("numeroDocumento", "27065567275");
@@ -49,6 +42,7 @@ public class AfipEndpointTest {
     public void testImprimirComprobante() throws Exception {
         // build request
         final Json factura = Json.map();
+        factura.set("puntoVenta", 1);
         factura.set("tipo", "A");
         factura.set("codigo", "1");
         factura.set("numero", "1");

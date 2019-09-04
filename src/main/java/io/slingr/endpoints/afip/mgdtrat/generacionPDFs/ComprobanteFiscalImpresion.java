@@ -29,6 +29,7 @@ import java.util.List;
  */
 public class ComprobanteFiscalImpresion {
 
+    private Integer puntoVenta;
     private String comprobanteLetra;
     private String comprobanteCodigo; //El código de AFIP: según tipo de comprobante y letra.
     private String comprobanteNumero;
@@ -53,6 +54,14 @@ public class ComprobanteFiscalImpresion {
     private List<ComprobanteFiscalRenglon> renglones = new ArrayList<ComprobanteFiscalRenglon>();
 
     private final static SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("dd/MM/yyyy");
+
+    public Integer getPuntoVenta() {
+        return puntoVenta;
+    }
+
+    public void setPuntoVenta(Integer puntoVenta) {
+        this.puntoVenta = puntoVenta;
+    }
 
     /**
      * @return the comprobanteLetra
@@ -291,13 +300,14 @@ public class ComprobanteFiscalImpresion {
      *
      * @return the codigoDeBarras
      */
-    public String getCodigoDeBarras() {
+    public String getCodigoDeBarras(Integer puntoVentaParam) {
         String codigoDeBarrasRetorno = null;
         if(codigoDeBarras != null && ! codigoDeBarras.isEmpty()) {
             codigoDeBarrasRetorno = codigoDeBarras;
         } else {
+
             String cuitEmpresa = GestorDeConfiguracion.getInstance().getProperty("CUIT");
-            String puntoDeVenta = Formateador.leftPadWithCeros(GestorDeConfiguracion.getInstance().getProperty("puntoDeVenta"), 4);
+            String puntoDeVenta = Formateador.leftPadWithCeros(puntoVentaParam, 4);
             DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
             if (this.getCaeFechaVencimiento() != null) {
                 String fechaVencimientoCae = dateFormat.format(this.getCaeFechaVencimiento());
@@ -369,7 +379,7 @@ public class ComprobanteFiscalImpresion {
         datosComprobante.put("iva", this.getIva());
         datosComprobante.put("total", this.getTotal());
         datosComprobante.put("notaAlPie", this.getNotaAlPie());
-        datosComprobante.put("codigoDeBarras", this.getCodigoDeBarras());
+        datosComprobante.put("codigoDeBarras", this.getCodigoDeBarras(puntoVenta));
 
         //Renglones Comprobante Fiscal
         List<HashMap<String, Object>> comprobanteRenglones = new ArrayList<>();
@@ -390,4 +400,5 @@ public class ComprobanteFiscalImpresion {
 
         return datosComprobante;
     }
+
 }

@@ -17,7 +17,15 @@ public class Formateador {
         return StringUtils.leftPad(inputString, size, padStr);
     }
 
-    public static String leftPadWithCeros(String inputString, int size) {
-        return Formateador.leftPad(inputString, size, "0");
+    public static String leftPadWithCeros(Object inputString, int size) {
+        String str = null;
+        if (inputString instanceof String) {
+            str = (String) inputString;
+        } else {
+            if (inputString != null) {
+                str = inputString.toString();
+            }
+        }
+        return Formateador.leftPad(str, size, "0");
     }
 }
