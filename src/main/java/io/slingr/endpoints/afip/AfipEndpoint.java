@@ -205,7 +205,11 @@ public class AfipEndpoint extends Endpoint {
             logger.warn("No se pudo parsear fecha", e);
         }
         cfi.setCondicionDeVenta(comprobanteJson.string("condicionVenta", "Contado"));
-        cfi.setObservaciones("");
+        if (!comprobanteJson.isEmpty("observaciones")) {
+            cfi.setObservaciones(comprobanteJson.string("observaciones"));
+        } else {
+            cfi.setObservaciones("");
+        }
         if (comprobanteJson.contains("cae")) {
             cfi.setCaeNumero(Long.parseLong(comprobanteJson.string("cae")));
         }

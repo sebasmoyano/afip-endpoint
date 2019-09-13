@@ -106,6 +106,8 @@ public class AfipEndpointTest {
         items.push(item);
         presupuesto.set("items", items);
 
+        presupuesto.set("observaciones", "Esto es una observacion");
+
         // test request
         Json res = test.executeFunction("_imprimirComprobante", presupuesto);
         logger.info("Imprimir comprobante response: " + res.toString());
